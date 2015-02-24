@@ -229,7 +229,7 @@ func (p *EthereumApi) Transact(args *NewTxArgs, reply *interface{}) error {
 	if _, exists := p.register[args.From]; exists {
 		p.register[args.From] = append(p.register[args.From], args)
 	} else {
-		result, _ := p.xeth.Transact( /* TODO specify account */ args.To, args.Value, args.Gas, args.GasPrice, args.Data)
+		result, _ := p.xeth.Transact(args.From, args.Pass, args.To, args.Value, args.Gas, args.GasPrice, args.Data)
 		*reply = result
 	}
 
