@@ -184,6 +184,17 @@ func New(config *Config) (*Ethereum, error) {
 	// TODO: add config flag and case on plain/protected key store
 	ks := crypto.NewKeyStorePlain(ethutil.DefaultDataDir())
 	am := accounts.NewAccountManager(ks, 300000) // keys unlocked for 300s
+	accs, err := am.Accounts()
+	if err != nil {
+		return nil, err
+	}
+	if len(accs) == 0 {
+		_, err := am.NewAccount("")
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	eth.accountManager = &am
 
 	eth.txPool = core.NewTxPool(eth.EventMux())
