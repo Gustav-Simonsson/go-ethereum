@@ -183,6 +183,11 @@ ApplicationWindow {
                 }
             }
 
+            MenuItem {
+                text: "Generate key"
+                shortcut: "Ctrl+k"
+                onTriggered: gui.generateKey()
+            }
         }
 
         Menu {
