@@ -179,7 +179,7 @@ func (gui *Gui) ImportKey(filePath string) {
 }
 
 func (gui *Gui) GenerateKey() {
-	_, err := gui.eth.AccountManager().NewAccount("hurr")
+	_, err := gui.eth.AccountManager().NewAccount("")
 	if err != nil {
 		// TODO: UI feedback?
 	}
@@ -199,25 +199,6 @@ func (gui *Gui) createWindow(comp qml.Object) *qml.Window {
 	gui.uiLib.win = gui.win
 
 	return gui.win
-}
-
-func (gui *Gui) ImportAndSetPrivKey(secret string) bool {
-	err := gui.eth.KeyManager().InitFromString(gui.Session, 0, secret)
-	if err != nil {
-		guilogger.Errorln("unable to import: ", err)
-		return false
-	}
-	guilogger.Errorln("successfully imported: ", err)
-	return true
-}
-
-func (gui *Gui) CreateAndSetPrivKey() (string, string, string, string) {
-	err := gui.eth.KeyManager().Init(gui.Session, 0, true)
-	if err != nil {
-		guilogger.Errorln("unable to create key: ", err)
-		return "", "", "", ""
-	}
-	return gui.eth.KeyManager().KeyPair().AsStrings()
 }
 
 func (gui *Gui) setInitialChain(ancientBlocks bool) {
