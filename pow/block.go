@@ -9,6 +9,7 @@ import (
 type Block interface {
 	Difficulty() *big.Int
 	HashNoNonce() []byte
+	Hash() []byte
 	Nonce() uint64
 	MixDigest() []byte
 	SeedHash() []byte

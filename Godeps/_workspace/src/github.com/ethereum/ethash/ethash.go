@@ -284,7 +284,9 @@ func (pow *Ethash) Search(block pow.Block, stop <-chan struct{}) (uint64, []byte
 
 func (pow *Ethash) Verify(block pow.Block) bool {
 	// Make sure the SeedHash is set correctly
-	if bytes.Compare(block.SeedHash(), pow.GetSeedHash(block.NumberU64())) != 0 {
+	bsh := block.SeedHash()
+	powsh := pow.GetSeedHash(block.NumberU64())
+	if bytes.Compare(bsh, powsh) != 0 {
 		return false
 	}
 

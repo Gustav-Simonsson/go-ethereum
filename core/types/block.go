@@ -3,10 +3,12 @@ package types
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"sort"
 	"time"
+	"log"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethutil"
@@ -77,11 +79,14 @@ func (self *Header) RlpData() interface{} {
 }
 
 func (self *Header) Hash() []byte {
-	return crypto.Sha3(ethutil.Encode(self.rlpData(true)))
+	rlp := ethutil.Encode(self.rlpData(true))
+	log.Println("HURR Hash rlp:", hex.EncodeToString(rlp))
+	return crypto.Sha3(rlp)
 }
 
 func (self *Header) HashNoNonce() []byte {
-	return crypto.Sha3(ethutil.Encode(self.rlpData(false)))
+	rlp := ethutil.Encode(self.rlpData(false))
+	return crypto.Sha3(rlp)
 }
 
 type Block struct {
