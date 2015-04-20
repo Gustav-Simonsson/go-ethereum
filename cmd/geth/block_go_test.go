@@ -22,6 +22,10 @@ func TestBcUncleTests(t *testing.T) {
 	runBlockTestsInFile("../../tests/files/BlockTests/bcUncleTest.json", t)
 }
 
+func TestBcUncleHeaderValidityTests(t *testing.T) {
+	runBlockTestsInFile("../../tests/files/BlockTests/bcUncleHeaderValiditiy.json", t)
+}
+
 func runBlockTestsInFile(filepath string, t *testing.T) {
 	bt, err := tests.LoadBlockTests(filepath)
 	if err != nil {
@@ -30,9 +34,16 @@ func runBlockTestsInFile(filepath string, t *testing.T) {
 
 	notWorking := make(map[string]bool, 100)
 	snafus := []string{
+		// bcUncleTest.json
 		"threeUncle",               // outdated, planned for removal once C++ is up to date
 		"oneUncleGeneration7",      // invalid, YP specifies max generation as 6
 		"uncleWithSameBlockNumber", // should work?
+		"InChainUncle",             // should work?
+		"twoEqualUncle",            // should work? new uniqueness check
+
+		// bcUncleHeaderValiditiy.json
+		"",
+		"",
 	}
 
 	for _, name := range snafus {
