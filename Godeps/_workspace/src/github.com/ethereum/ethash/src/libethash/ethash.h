@@ -26,7 +26,7 @@
 #include <stddef.h>
 #include "compiler.h"
 
-#define ETHASH_REVISION 23
+#define ETHASH_REVISION 24
 #define ETHASH_DATASET_BYTES_INIT 1073741824U // 2**30
 #define ETHASH_DATASET_BYTES_GROWTH 8388608U  // 2**23
 #define ETHASH_CACHE_BYTES_INIT 1073741824U // 2**24

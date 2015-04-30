@@ -13,6 +13,12 @@ package ethash
 #else
 #include "src/libethash/io_posix.c"
 #endif
+
+int goCallback(unsigned int progress) {
+  printf("DAG generation progress: %u % \n", progress);
+  fflush(stdout);
+  return 0;
+}
 */
 import "C"
 
@@ -76,7 +82,7 @@ func makeCache(blockNum uint64, test bool) *cache {
 	}
 	light := C.ethash_light_new_internal(size, (*C.ethash_h256_t)(unsafe.Pointer(&seedHash[0])))
 	cache := &cache{light}
-	runtime.SetFinalizer(cache, freeCache)
+	//runtime.SetFinalizer(cache, freeCache)
 	return cache
 }
 
@@ -155,6 +161,8 @@ func freeDAG(h *dag) {
 	}
 }
 
+//
+//
 // used by the GO client to create the DAG file for system testing
 func MakeDAG(blockNum uint64, test bool, dir string) *dag {
 	if dir == "" {
@@ -162,7 +170,7 @@ func MakeDAG(blockNum uint64, test bool, dir string) *dag {
 	}
 	seedHash, _ := GetSeedHash(blockNum)
 	cache := makeCache(blockNum, test)
-	size := C.ethash_get_cachesize(C.uint64_t(blockNum))
+	size := C.ethash_get_datasize(C.uint64_t(blockNum))
 	if test {
 		size = dagSizeForTesting
 	}
@@ -171,7 +179,7 @@ func MakeDAG(blockNum uint64, test bool, dir string) *dag {
 		(*C.ethash_h256_t)(unsafe.Pointer(&seedHash[0])),
 		size,
 		cache.light,
-		nil,
+		(C.ethash_callback_t)(C.goCallback),
 	)
 	if full == nil {
 		panic("ethash_full_new IO or memory error")
@@ -179,6 +187,13 @@ func MakeDAG(blockNum uint64, test bool, dir string) *dag {
 	dag := &dag{full: full}
 	runtime.SetFinalizer(dag, freeDAG)
 	return dag
+}
+
+// export goCallback
+func goCallback(progress C.uint) C.int {
+	glog.V(logger.Info).Infoln(fmt.Sprintf("DAG generation progress: ", progress))
+	fmt.Println("DAG generation progress: ", progress)
+	return 0
 }
 
 type Full struct {

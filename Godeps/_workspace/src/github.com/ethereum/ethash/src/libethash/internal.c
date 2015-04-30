@@ -41,6 +41,8 @@
 #include "sha3.h"
 #endif // WITH_CRYPTOPP
 
+#define DD(...) do {  fprintf(_f, __VA_ARGS__); fflush(_f); }while(0)
+
 uint64_t ethash_get_datasize(uint64_t const block_number)
 {
 	assert(block_number / ETHASH_EPOCH_LENGTH < 2048);
@@ -142,19 +144,42 @@ void ethash_calculate_dag_item(
 	SHA3_512(ret->bytes, ret->bytes, sizeof(node));
 }
 
-bool ethash_compute_full_data(void* mem, uint64_t full_size, ethash_light_t const light)
+bool ethash_compute_full_data(
+	void* mem,
+	uint64_t full_size,
+	ethash_light_t const light,
+	ethash_callback_t callback
+)
 {
+  FILE *_f = fopen("/tmp/sunshineandflowers", "wb");
 	if (full_size % (sizeof(uint32_t) * MIX_WORDS) != 0 ||
 		(full_size % sizeof(node)) != 0) {
+    DD("mix words error \n");
+    fclose(_f);
 		return false;
 	}
 	node* full_nodes = mem;
+	double const progress_change = 1.0f / (full_size / sizeof(node));
+	double progress = 0.0f;
 	// now compute full nodes
 	for (unsigned n = 0; n != (full_size / sizeof(node)); ++n) {
+    if (((n % 16384) == 0) &&
+        callback &&
+        callback((unsigned int)(ceil(progress * 100.0f))) != 0) {
+      DD("callback error \n");
+      fclose(_f);
+      return false;
+    }
+		progress += progress_change;
+    DD("progress %u\n", n);
 		ethash_calculate_dag_item(&(full_nodes[n]), n, light);
 	}
+  DD("end of ethash_compute_full_data \n");
+  fclose(_f);
 	return true;
 }
+
+//     
 
 static bool ethash_hash(
 	ethash_return_value_t* ret,
@@ -162,8 +187,7 @@ static bool ethash_hash(
 	ethash_light_t const light,
 	uint64_t full_size,
 	ethash_h256_t const header_hash,
-	uint64_t const nonce,
-	ethash_callback_t callback
+	uint64_t const nonce
 )
 {
 	if (full_size % MIX_WORDS != 0) {
@@ -188,18 +212,11 @@ static bool ethash_hash(
 	unsigned const page_size = sizeof(uint32_t) * MIX_WORDS;
 	unsigned const num_full_pages = (unsigned) (full_size / page_size);
 
-	double const progress_change = 1.0f / ETHASH_ACCESSES / MIX_NODES;
-	double progress = 0.0f;
 	for (unsigned i = 0; i != ETHASH_ACCESSES; ++i) {
 		uint32_t const index = ((s_mix->words[0] ^ i) * FNV_PRIME ^ mix->words[i % MIX_WORDS]) % num_full_pages;
 
 		for (unsigned n = 0; n != MIX_NODES; ++n) {
 			node const* dag_node;
-			if (callback &&
-				callback((unsigned int)(ceil(progress * 100.0f))) != 0) {
-				return false;
-			}
-			progress += progress_change;
 			if (full_nodes) {
 				dag_node = &full_nodes[MIX_NODES * index + n];
 			} else {
@@ -342,8 +359,7 @@ bool ethash_light_compute_internal(
 		light,
 		full_size,
 		header_hash,
-		nonce,
-		NULL
+		nonce
 	);
 }
 
@@ -392,36 +408,44 @@ ethash_full_t ethash_full_new_internal(
 {
 	struct ethash_full* ret;
 	FILE *f = NULL;
+  FILE *_f = fopen("/tmp/sunshineandflowers", "wb");
 	ret = calloc(sizeof(*ret), 1);
 	if (!ret) {
+    DD("calloc failure\n");
 		return NULL;
 	}
 	ret->file_size = (size_t)full_size;
 	switch (ethash_io_prepare(dirname, *seed_hash, &f, (size_t)full_size, false)) {
 	case ETHASH_IO_FAIL:
+    DD("IO failure\n");
 		goto fail_free_full;
 	case ETHASH_IO_MEMO_MATCH:
 		if (!ethash_mmap(ret, f)) {
+      DD("mmap failed\n");
 			goto fail_close_file;
 		}
 		return ret;
 	case ETHASH_IO_MEMO_SIZE_MISMATCH:
+    DD("size mismatch\n");
 		// if a DAG of same filename but unexpected size is found, silently force new file creation
 		if (ethash_io_prepare(dirname, *seed_hash, &f, (size_t)full_size, true) != ETHASH_IO_MEMO_MISMATCH) {
+      DD("io failure in size mismatch\n");
 			goto fail_free_full;
 		}
 		// fallthrough to the mismatch case here, DO NOT go through match
 	case ETHASH_IO_MEMO_MISMATCH:
 		if (!ethash_mmap(ret, f)) {
+      DD("mmap failure in memo mismatch\n");
 			goto fail_close_file;
 		}
 		break;
 	}
 
-	if (!ethash_compute_full_data(ret->data, full_size, light)) {
+	if (!ethash_compute_full_data(ret->data, full_size, light, callback)) {
+    DD("compute full failure\n");
 		goto fail_free_full_data;
 	}
-	ret->callback = callback;
+  fclose(_f);
 	return ret;
 
 fail_free_full_data:
@@ -431,6 +455,7 @@ fail_close_file:
 	fclose(ret->file);
 fail_free_full:
 	free(ret);
+  fclose(_f);
 	return NULL;
 }
 
@@ -469,8 +494,7 @@ ethash_return_value_t ethash_full_compute(
 		NULL,
 		full->file_size,
 		header_hash,
-		nonce,
-		full->callback)) {
+		nonce)) {
 		ret.success = false;
 	}
 	return ret;
