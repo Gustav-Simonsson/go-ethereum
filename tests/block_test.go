@@ -13,7 +13,7 @@ import (
 
 // TODO: refactor test setup & execution to better align with vm and tx tests
 func TestBcValidBlockTests(t *testing.T) {
-	t.Skip("Skipped in lieu of performance fixes.")
+	//t.Skip("Skipped in lieu of performance fixes.")
 	runBlockTestsInFile("files/BlockTests/bcValidBlockTest.json", []string{}, t)
 }
 
