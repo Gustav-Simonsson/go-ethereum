@@ -15,7 +15,7 @@ package ethash
 #endif
 
 int goCallback(unsigned int progress) {
-  printf("DAG generation progress: %u % \n", progress);
+  printf("DAG generation progress: %u of 100 \n", progress);
   fflush(stdout);
   return 0;
 }
@@ -82,7 +82,6 @@ func makeCache(blockNum uint64, test bool) *cache {
 	}
 	light := C.ethash_light_new_internal(size, (*C.ethash_h256_t)(unsafe.Pointer(&seedHash[0])))
 	cache := &cache{light}
-	//runtime.SetFinalizer(cache, freeCache)
 	return cache
 }
 
@@ -185,6 +184,7 @@ func MakeDAG(blockNum uint64, test bool, dir string) *dag {
 		panic("ethash_full_new IO or memory error")
 	}
 	dag := &dag{full: full}
+	runtime.SetFinalizer(cache, freeCache)
 	runtime.SetFinalizer(dag, freeDAG)
 	return dag
 }
