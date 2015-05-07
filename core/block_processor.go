@@ -282,6 +282,7 @@ func (sm *BlockProcessor) ValidateHeader(block, parent *types.Header) error {
 	}
 
 	// block.gasLimit - parent.gasLimit <= parent.gasLimit / GasLimitBoundDivisor
+	fmt.Println("HURR parent limit: ", parent.GasLimit)
 	a := new(big.Int).Sub(block.GasLimit, parent.GasLimit)
 	a.Abs(a)
 	b := new(big.Int).Div(parent.GasLimit, params.GasLimitBoundDivisor)

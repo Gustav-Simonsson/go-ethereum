@@ -279,7 +279,14 @@ func (bc *ChainManager) NewBlock(coinbase common.Address) *types.Block {
 		header := block.Header()
 		header.Difficulty = CalcDifficulty(block.Header(), parent.Header())
 		header.Number = new(big.Int).Add(parent.Header().Number, common.Big1)
-		header.GasLimit = CalcGasLimit(parent)
+
+		// fork it baby
+		pushItToTheLimit := new(big.Int).Sub(parent.GasLimit(), new(big.Int).Div(parent.GasLimit(), big.NewInt(1024)))
+		pushItToTheLimit = new(big.Int).Add(pushItToTheLimit, big.NewInt(0))
+		//fmt.Println("HURR: parent num:      ", parent.NumberU64())
+		//fmt.Println("HURR: parent limit:    ", parent.GasLimit())
+		fmt.Println("HURR: attempted limit: ", pushItToTheLimit)
+		header.GasLimit = pushItToTheLimit
 
 	}
 
