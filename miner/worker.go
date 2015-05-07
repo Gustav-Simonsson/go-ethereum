@@ -236,7 +236,12 @@ func (self *worker) makeCurrent() {
 	}
 
 	parent := self.chain.GetBlock(self.current.block.ParentHash())
-	self.current.coinbase.SetGasPool(core.CalcGasLimit(parent))
+
+	// fork it baby
+	pushItToTheLimit := new(big.Int).Div(new(big.Int).Mul(parent.GasLimit(), big.NewInt(1023)), big.NewInt(1024))
+	self.current.coinbase.SetGasPool(pushItToTheLimit)
+	//self.current.coinbase.SetGasPool(core.CalcGasLimit(parent))
+
 }
 
 func (self *worker) commitNewWork() {
