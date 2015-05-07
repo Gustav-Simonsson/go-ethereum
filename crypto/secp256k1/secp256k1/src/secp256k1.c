@@ -370,3 +370,45 @@ int secp256k1_ec_privkey_import(unsigned char *seckey, const unsigned char *priv
     secp256k1_scalar_clear(&key);
     return ret;
 }
+
+static int ec_scalar_point_mul(unsigned char *x,
+                               unsigned char *y,
+                               const unsigned char *k) {
+    secp256k1_scalar_t zero_scalar, k_scalar;
+    secp256k1_fe_t x_scalar, y_scalar;
+    secp256k1_ge_t ge, ge2;
+    secp256k1_gej_t pr, gej;
+    int overflow = 0;
+
+    secp256k1_scalar_set_int(&zero_scalar, 0);
+    secp256k1_scalar_set_b32(&k_scalar, k, &overflow);
+
+    // TODO: is this check needed?
+    if (secp256k1_scalar_is_zero(&k_scalar)) {
+      return 0;
+    }
+
+    if (!secp256k1_fe_set_b32(&x_scalar, x)) {
+      return 0;
+    }
+
+    if (!secp256k1_fe_set_b32(&y_scalar, y)) {
+      return 0;
+    }
+
+    // to get a gej with right infinity and z value
+    secp256k1_ge_set_xy(&ge, &x_scalar, &y_scalar);
+    secp256k1_gej_set_ge(&gej, &ge);
+
+    secp256k1_ecmult(&pr, &gej, &k_scalar, &zero_scalar);
+
+    secp256k1_ge_set_gej(&ge2, &pr);
+
+    secp256k1_fe_normalize(&ge2.x);
+    secp256k1_fe_normalize(&ge2.y);
+
+    secp256k1_fe_get_b32(x, &ge2.x);
+    secp256k1_fe_get_b32(y, &ge2.y);
+
+    return 1;
+}

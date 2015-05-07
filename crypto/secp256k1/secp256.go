@@ -1,6 +1,6 @@
 package secp256k1
 
-// TODO: set USE_SCALAR_4X64 depending on platform?
+// TODO: set USE_SCALAR_4X64 depending on platform!
 
 /*
 #cgo CFLAGS: -I./secp256k1
@@ -22,8 +22,11 @@ import "C"
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"math/big"
 	"unsafe"
 
+	//"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto/randentropy"
 )
 
@@ -245,4 +248,70 @@ func RecoverPubkey(msg []byte, sig []byte) ([]byte, error) {
 		return pubkey, nil
 	}
 	return nil, errors.New("Impossible Error: func RecoverPubkey has reached an unreachable state")
+}
+
+/*
+  http://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication#Point_multiplication
+  This is used by ECIES when it calculates the shared secret in ECDH
+  x, y is the point and k the scalar to multiply with, for ECDH
+  x, y is the pubkey and k is the privkey
+*/
+func ECPointScalarMul(x, y *big.Int, k []byte) (*big.Int, *big.Int, error) {
+	// TODO: seems we always get 32 bytes for these values, but verify if we
+	// could get less, in which case we need zero padding:
+	//xb := common.RightPadBytes(x.Bytes(), 32)
+	//yb := common.RightPadBytes(y.Bytes(), 32)
+	//kb := common.RightPadBytes(k, 32)
+
+	xb := x.Bytes()
+	yb := y.Bytes()
+
+	//var scalarReversed [32]byte
+	//p256GetScalar(&scalarReversed, k)
+
+	xb_ptr := (*C.uchar)(unsafe.Pointer(&xb[0]))
+	yb_ptr := (*C.uchar)(unsafe.Pointer(&yb[0]))
+	kb_ptr := (*C.uchar)(unsafe.Pointer(&k[0]))
+
+	res := C.ec_scalar_point_mul(xb_ptr, yb_ptr, kb_ptr)
+	if res != 1 {
+		return nil, nil, fmt.Errorf("C.scalar_point_mul failed")
+	}
+
+	newX := new(big.Int).SetBytes(xb)
+	newY := new(big.Int).SetBytes(yb)
+
+	/*
+		p256RInverse, _ := new(big.Int).SetString("7fffffff00000001fffffffe8000000100000000ffffffff0000000180000000", 16)
+
+		p256P, _ := new(big.Int).SetString("115792089210356248762697446949407573530086143415290314195533631308867097853951", 10)
+
+		newX.Mul(newX, p256RInverse)
+		newX.Mod(newX, p256P)
+
+		newY.Mul(newY, p256RInverse)
+		newY.Mod(newY, p256P)
+
+		return new(big.Int).SetBytes(xb), new(big.Int).SetBytes(yb), nil
+	*/
+	return newX, newY, nil
+}
+
+// from golang/src/crypto/elliptic/p256.go
+func p256GetScalar(out *[32]byte, in []byte) {
+	n := new(big.Int).SetBytes(in)
+	var scalarBytes []byte
+
+	P256N, _ := new(big.Int).SetString("115792089210356248762697446949407573529996955224135760342422259061068512044369", 10)
+
+	if n.Cmp(P256N) >= 0 {
+		n.Mod(n, P256N)
+		scalarBytes = n.Bytes()
+	} else {
+		scalarBytes = in
+	}
+
+	for i, v := range scalarBytes {
+		out[len(scalarBytes)-(1+i)] = v
+	}
 }

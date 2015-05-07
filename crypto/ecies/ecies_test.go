@@ -5,10 +5,15 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"testing"
+	"time"
+
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 )
 
 var dumpEnc bool
@@ -486,4 +491,30 @@ func TestBasicKeyValidation(t *testing.T) {
 			t.FailNow()
 		}
 	}
+}
+
+func TestScalarMul(t *testing.T) {
+	xb, _ := hex.DecodeString("5a65722c83acf7047bf105c41be8a2f2e3769cc44a687761a7fa54c4d763c193")
+	yb, _ := hex.DecodeString("aacfd6307ba23b1981f2fc5f3abd0e526faa03872341e09a42c0211ca11e0d1b")
+	kb, _ := hex.DecodeString("3e84589421ee0bbfe8c216e4f75c95509ff566238cdff11ac2f6b410f766d662")
+	//kb, _ := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000003")
+
+	xi := new(big.Int).SetBytes(xb)
+	yi := new(big.Int).SetBytes(yb)
+	fmt.Println("Xi                         : ", xi, yi)
+
+	t3 := time.Now()
+	cx, cy, _ := secp256k1.ECPointScalarMul(xi, yi, kb)
+	t4 := time.Since(t3)
+	fmt.Println("HURR: C : ", t4.String())
+
+	prv, _ := GenerateKey(rand.Reader, DefaultCurve, nil)
+
+	t1 := time.Now()
+	gx, gy := prv.PublicKey.Curve.ScalarMult(xi, yi, kb)
+	t2 := time.Since(t1)
+	fmt.Println("HURR: Go: ", t2.String())
+
+	fmt.Println("Go Curve.ScalarMult        : ", gx, gy)
+	fmt.Println("secp256k1.ECPointScalarMul : ", cx, cy)
 }
