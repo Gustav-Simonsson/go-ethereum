@@ -2,6 +2,7 @@ package miner
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -54,6 +55,14 @@ func (self *Miner) Start(coinbase common.Address, threads int) {
 	self.worker.coinbase = coinbase
 	self.worker.start()
 	self.worker.commitNewWork()
+
+	go func() {
+		for {
+			glog.V(logger.Error).Infof("API Hashrate: %v", self.HashRate())
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
 }
 
 func (self *Miner) Stop() {
@@ -70,7 +79,7 @@ func (self *Miner) Register(agent Agent) {
 }
 
 func (self *Miner) HashRate() int64 {
-	return self.worker.HashRate()
+	return self.pow.GetHashrate()
 }
 
 func (self *Miner) SetExtra(extra []byte) {
