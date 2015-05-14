@@ -279,7 +279,7 @@ func (pow *Full) Search(block pow.Block, stop <-chan struct{}) (nonce uint64, mi
 		default:
 			i++
 
-			if i == 1 || ((i % (1 << 16)) == 0) { // we don't have to update hash rate on every nonce
+			if i == 2 || ((i % (1 << 16)) == 0) { // we don't have to update hash rate on every nonce
 				elapsed := time.Now().UnixNano() - start
 				hashes := (float64(1e9) / float64(elapsed)) * float64(i-starti)
 				//glog.V(logger.Error).Infof("hashes: %v", hashes)
