@@ -2,6 +2,7 @@ package vm
 
 import (
 	"bytes"
+	"fmt"
 	"math/big"
 	"strconv"
 	"testing"
@@ -81,6 +82,10 @@ func RunVmTest(p string, t *testing.T) {
 	helper.CreateFileTests(t, p, &tests)
 
 	for name, test := range tests {
+		if name != "createNameRegistratorPerTxsNotEnoughGas" {
+			continue
+		}
+		fmt.Println("HURR: ", name)
 		/*
 			vm.Debug = true
 			glog.SetV(4)
@@ -269,8 +274,13 @@ func TestVmLog(t *testing.T) {
 	RunVmTest(fn, t)
 }
 
-func TestInputLimits1(t *testing.T) {
-	const fn = "../files/VMTests/vmInputLimits1.json"
+func TestInputLimits(t *testing.T) {
+	const fn = "../files/VMTests/vmInputLimits.json"
+	RunVmTest(fn, t)
+}
+
+func TestInputLimitsLight(t *testing.T) {
+	const fn = "../files/VMTests/vmInputLimitsLight.json"
 	RunVmTest(fn, t)
 }
 
@@ -348,5 +358,10 @@ func TestQuadraticComplexity(t *testing.T) {
 
 func TestSolidity(t *testing.T) {
 	const fn = "../files/StateTests/stSolidityTest.json"
+	RunVmTest(fn, t)
+}
+
+func TestWallet(t *testing.T) {
+	const fn = "../files/StateTests/stWalletTest.json"
 	RunVmTest(fn, t)
 }
