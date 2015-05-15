@@ -88,7 +88,10 @@ func IntrinsicGas(msg Message) *big.Int {
 }
 
 func ApplyMessage(env vm.Environment, msg Message, coinbase *state.StateObject) ([]byte, *big.Int, error) {
-	return NewStateTransition(env, msg, coinbase).transitionState()
+	s := NewStateTransition(env, msg, coinbase)
+	//fmt.Println("HURR: msg: ", msg)
+	//fmt.Println("HURR: s: ", s)
+	return s.transitionState()
 }
 
 func NewStateTransition(env vm.Environment, msg Message, coinbase *state.StateObject) *StateTransition {

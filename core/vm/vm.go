@@ -630,7 +630,7 @@ func (self *Vm) Run(context *Context, callData []byte) (ret []byte, err error) {
 				offset, size = stack.pop(), stack.pop()
 				input        = mem.Get(offset.Int64(), size.Int64())
 				gas          = new(big.Int).Set(context.Gas)
-				addr         common.Address
+				//addr         common.Address
 			)
 			self.Endl()
 
@@ -646,11 +646,10 @@ func (self *Vm) Run(context *Context, callData []byte) (ret []byte, err error) {
 				dataGas.Mul(dataGas, params.CreateDataGas)
 				if context.UseGas(dataGas) {
 					ref.SetCode(ret)
+				} else {
+					//addr = ref.Address()
+					//stack.push(addr.Big())
 				}
-				addr = ref.Address()
-
-				stack.push(addr.Big())
-
 			}
 
 		case CALL, CALLCODE:

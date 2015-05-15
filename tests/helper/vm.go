@@ -2,6 +2,7 @@ package helper
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -9,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/logger/glog"
 )
 
 type Env struct {
@@ -182,7 +184,13 @@ func RunState(statedb *state.StateDB, env, tx map[string]string) ([]byte, state.
 	message := NewMessage(common.BytesToAddress(keyPair.Address()), to, data, value, gas, price, nonce)
 	vmenv := NewEnvFromMap(statedb, env, tx)
 	vmenv.origin = common.BytesToAddress(keyPair.Address())
-	ret, _, err := core.ApplyMessage(vmenv, message, coinbase)
+	///*
+	vm.Debug = true
+	glog.SetV(6)
+	glog.SetToStderr(true)
+	//*/
+	ret, usedGas, err := core.ApplyMessage(vmenv, message, coinbase)
+	fmt.Println("HURR: ", usedGas)
 	if core.IsNonceErr(err) || core.IsInvalidTxErr(err) {
 		statedb.Set(snapshot)
 	}
