@@ -455,8 +455,6 @@ func (s *Ethereum) Start() error {
 	if err != nil {
 		return err
 	}
-	// periodically flush databases
-	go s.syncDatabases()
 
 	if s.AutoDAG {
 		s.StartAutoDAG()
@@ -476,36 +474,6 @@ func (s *Ethereum) Start() error {
 
 	glog.V(logger.Info).Infoln("Server started")
 	return nil
-}
-
-// sync databases every minute. If flushing fails we exit immediatly. The system
-// may not continue under any circumstances.
-func (s *Ethereum) syncDatabases() {
-	ticker := time.NewTicker(1 * time.Minute)
-done:
-	for {
-		select {
-		case <-ticker.C:
-			// don't change the order of database flushes
-			if err := s.extraDb.Flush(); err != nil {
-				glog.Fatalf("fatal error: flush extraDb: %v (Restart your node. We are aware of this issue)\n", err)
-			}
-			if err := s.stateDb.Flush(); err != nil {
-				glog.Fatalf("fatal error: flush stateDb: %v (Restart your node. We are aware of this issue)\n", err)
-			}
-			if err := s.blockDb.Flush(); err != nil {
-				glog.Fatalf("fatal error: flush blockDb: %v (Restart your node. We are aware of this issue)\n", err)
-			}
-		case <-s.shutdownChan:
-			break done
-		}
-	}
-
-	s.blockDb.Close()
-	s.stateDb.Close()
-	s.extraDb.Close()
-
-	close(s.databasesClosed)
 }
 
 func (s *Ethereum) StartForTest() {
