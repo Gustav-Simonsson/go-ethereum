@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/logger"
 	"github.com/ethereum/go-ethereum/logger/glog"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -41,7 +42,7 @@ func (self Storage) Copy() Storage {
 
 type StateObject struct {
 	// State database for storing state changes
-	db common.Database
+	db *ethdb.DB
 	// The state object
 	State *StateDB
 
@@ -79,7 +80,7 @@ func (self *StateObject) Reset() {
 	self.State.Reset()
 }
 
-func NewStateObject(address common.Address, db common.Database) *StateObject {
+func NewStateObject(address common.Address, db *ethdb.DB) *StateObject {
 	// This to ensure that it has 20 bytes (and not 0 bytes), thus left or right pad doesn't matter.
 	//address := common.ToAddress(addr)
 
@@ -92,7 +93,7 @@ func NewStateObject(address common.Address, db common.Database) *StateObject {
 	return object
 }
 
-func NewStateObjectFromBytes(address common.Address, data []byte, db common.Database) *StateObject {
+func NewStateObjectFromBytes(address common.Address, data []byte, db *ethdb.DB) *StateObject {
 	// TODO clean me up
 	var extobject struct {
 		Nonce    uint64

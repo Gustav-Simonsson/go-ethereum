@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/logger"
 	"github.com/ethereum/go-ethereum/logger/glog"
 	"github.com/ethereum/go-ethereum/trie"
@@ -16,7 +17,7 @@ import (
 // * Contracts
 // * Accounts
 type StateDB struct {
-	db   common.Database
+	db   *ethdb.DB
 	trie *trie.SecureTrie
 
 	stateObjects map[string]*StateObject
@@ -29,7 +30,7 @@ type StateDB struct {
 }
 
 // Create a new state from a given trie
-func New(root common.Hash, db common.Database) *StateDB {
+func New(root common.Hash, db *ethdb.DB) *StateDB {
 	trie := trie.NewSecure(root[:], db)
 	return &StateDB{db: db, trie: trie, stateObjects: make(map[string]*StateObject), refund: make(map[string]*big.Int), logs: make(map[common.Hash]Logs)}
 }

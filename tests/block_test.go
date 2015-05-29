@@ -106,6 +106,6 @@ func testEthConfig() *eth.Config {
 		Verbosity:      5,
 		Etherbase:      "primary",
 		AccountManager: accounts.NewManager(ks),
-		NewDB:          func(path string) (common.Database, error) { return ethdb.NewMemDatabase() },
+		NewDB:          func(path string) (*ethdb.DB, error) { return (ethdb.InMemory)() },
 	}
 }

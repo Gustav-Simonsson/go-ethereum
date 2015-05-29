@@ -27,11 +27,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // TODO: rename to KeyStore when replacing existing KeyStore

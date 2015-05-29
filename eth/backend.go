@@ -94,7 +94,7 @@ type Config struct {
 
 	// NewDB is used to create databases.
 	// If nil, the default is to create leveldb databases on disk.
-	NewDB func(path string) (common.Database, error)
+	NewDB func(path string) (*ethdb.DB, error)
 }
 
 func (cfg *Config) parseBootNodes() []*discover.Node {
@@ -176,9 +176,9 @@ type Ethereum struct {
 	shutdownChan chan bool
 
 	// DB interfaces
-	blockDb common.Database // Block chain database
-	stateDb common.Database // State changes database
-	extraDb common.Database // Extra database (txs, etc)
+	blockDb *ethdb.DB // Block chain database
+	stateDb *ethdb.DB // State changes database
+	extraDb *ethdb.DB // Extra database (txs, etc)
 
 	// Closed when databases are flushed and closed
 	databasesClosed chan bool
@@ -229,7 +229,7 @@ func New(config *Config) (*Ethereum, error) {
 
 	newdb := config.NewDB
 	if newdb == nil {
-		newdb = func(path string) (common.Database, error) { return ethdb.NewLDBDatabase(path) }
+		newdb = func(path string) (*ethdb.DB, error) { return (ethdb.OnDisk)(path) }
 	}
 	blockDb, err := newdb(filepath.Join(config.DataDir, "blockchain"))
 	if err != nil {
@@ -432,9 +432,9 @@ func (s *Ethereum) BlockProcessor() *core.BlockProcessor { return s.blockProcess
 func (s *Ethereum) TxPool() *core.TxPool                 { return s.txPool }
 func (s *Ethereum) Whisper() *whisper.Whisper            { return s.whisper }
 func (s *Ethereum) EventMux() *event.TypeMux             { return s.eventMux }
-func (s *Ethereum) BlockDb() common.Database             { return s.blockDb }
-func (s *Ethereum) StateDb() common.Database             { return s.stateDb }
-func (s *Ethereum) ExtraDb() common.Database             { return s.extraDb }
+func (s *Ethereum) BlockDb() *ethdb.DB                   { return s.blockDb }
+func (s *Ethereum) StateDb() *ethdb.DB                   { return s.stateDb }
+func (s *Ethereum) ExtraDb() *ethdb.DB                   { return s.extraDb }
 func (s *Ethereum) IsListening() bool                    { return true } // Always listening
 func (s *Ethereum) PeerCount() int                       { return s.net.PeerCount() }
 func (s *Ethereum) Peers() []*p2p.Peer                   { return s.net.Peers() }
@@ -613,7 +613,7 @@ func (self *Ethereum) StopAutoDAG() {
 	glog.V(logger.Info).Infof("Automatic pregeneration of ethash DAG OFF (ethash dir: %s)", ethash.DefaultDir)
 }
 
-func saveProtocolVersion(db common.Database, protov int) {
+func saveProtocolVersion(db *ethdb.DB, protov int) {
 	d, _ := db.Get([]byte("ProtocolVersion"))
 	protocolVersion := common.NewValue(d).Uint()
 
@@ -622,7 +622,7 @@ func saveProtocolVersion(db common.Database, protov int) {
 	}
 }
 
-func saveBlockchainVersion(db common.Database, bcVersion int) {
+func saveBlockchainVersion(db *ethdb.DB, bcVersion int) {
 	d, _ := db.Get([]byte("BlockchainVersion"))
 	blockchainVersion := common.NewValue(d).Uint()
 

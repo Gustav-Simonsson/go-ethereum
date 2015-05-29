@@ -2,7 +2,7 @@ package core
 
 import (
 	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 )
 
@@ -12,7 +12,7 @@ type Backend interface {
 	BlockProcessor() *BlockProcessor
 	ChainManager() *ChainManager
 	TxPool() *TxPool
-	BlockDb() common.Database
-	StateDb() common.Database
+	BlockDb() *ethdb.DB
+	StateDb() *ethdb.DB
 	EventMux() *event.TypeMux
 }

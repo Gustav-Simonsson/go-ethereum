@@ -50,8 +50,8 @@ var (
 )
 
 const (
-    // Default unlock duration (in seconds) when an account is unlocked from the console
-    DefaultAccountUnlockDuration = 300
+	// Default unlock duration (in seconds) when an account is unlocked from the console
+	DefaultAccountUnlockDuration = 300
 )
 
 type Account struct {

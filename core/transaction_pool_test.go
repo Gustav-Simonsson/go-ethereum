@@ -18,7 +18,7 @@ func transaction() *types.Transaction {
 }
 
 func setupTxPool() (*TxPool, *ecdsa.PrivateKey) {
-	db, _ := ethdb.NewMemDatabase()
+	db, _ := (ethdb.InMemory)()
 	statedb := state.New(common.Hash{}, db)
 
 	var m event.TypeMux

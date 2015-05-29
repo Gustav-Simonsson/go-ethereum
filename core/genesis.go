@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -19,7 +20,7 @@ var ZeroHash256 = make([]byte, 32)
 var ZeroHash160 = make([]byte, 20)
 var ZeroHash512 = make([]byte, 64)
 
-func GenesisBlock(db common.Database) *types.Block {
+func GenesisBlock(db *ethdb.DB) *types.Block {
 	genesis := types.NewBlock(common.Hash{}, common.Address{}, common.Hash{}, params.GenesisDifficulty, 42, nil)
 	genesis.Header().Number = common.Big0
 	genesis.Header().GasLimit = params.GenesisGasLimit

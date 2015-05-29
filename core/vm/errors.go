@@ -2,8 +2,9 @@ package vm
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/params"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/params"
 )
 
 type OutOfGasError struct {

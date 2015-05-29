@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/pow"
 )
@@ -33,23 +34,23 @@ func NewBlockFromParent(addr common.Address, parent *types.Block) *types.Block {
 	return newBlockFromParent(addr, parent)
 }
 
-func MakeBlock(bman *BlockProcessor, parent *types.Block, i int, db common.Database, seed int) *types.Block {
+func MakeBlock(bman *BlockProcessor, parent *types.Block, i int, db *ethdb.DB, seed int) *types.Block {
 	return makeBlock(bman, parent, i, db, seed)
 }
 
-func MakeChain(bman *BlockProcessor, parent *types.Block, max int, db common.Database, seed int) types.Blocks {
+func MakeChain(bman *BlockProcessor, parent *types.Block, max int, db *ethdb.DB, seed int) types.Blocks {
 	return makeChain(bman, parent, max, db, seed)
 }
 
-func NewChainMan(block *types.Block, eventMux *event.TypeMux, db common.Database) *ChainManager {
+func NewChainMan(block *types.Block, eventMux *event.TypeMux, db *ethdb.DB) *ChainManager {
 	return newChainManager(block, eventMux, db)
 }
 
-func NewBlockProc(db common.Database, cman *ChainManager, eventMux *event.TypeMux) *BlockProcessor {
+func NewBlockProc(db *ethdb.DB, cman *ChainManager, eventMux *event.TypeMux) *BlockProcessor {
 	return newBlockProcessor(db, cman, eventMux)
 }
 
-func NewCanonical(n int, db common.Database) (*BlockProcessor, error) {
+func NewCanonical(n int, db *ethdb.DB) (*BlockProcessor, error) {
 	return newCanonical(n, db)
 }
 
@@ -73,7 +74,7 @@ func newBlockFromParent(addr common.Address, parent *types.Block) *types.Block {
 
 // Actually make a block by simulating what miner would do
 // we seed chains by the first byte of the coinbase
-func makeBlock(bman *BlockProcessor, parent *types.Block, i int, db common.Database, seed int) *types.Block {
+func makeBlock(bman *BlockProcessor, parent *types.Block, i int, db *ethdb.DB, seed int) *types.Block {
 	var addr common.Address
 	addr[0], addr[19] = byte(seed), byte(i)
 	block := newBlockFromParent(addr, parent)
@@ -88,7 +89,7 @@ func makeBlock(bman *BlockProcessor, parent *types.Block, i int, db common.Datab
 
 // Make a chain with real blocks
 // Runs ProcessWithParent to get proper state roots
-func makeChain(bman *BlockProcessor, parent *types.Block, max int, db common.Database, seed int) types.Blocks {
+func makeChain(bman *BlockProcessor, parent *types.Block, max int, db *ethdb.DB, seed int) types.Blocks {
 	bman.bc.currentBlock = parent
 	blocks := make(types.Blocks, max)
 	for i := 0; i < max; i++ {
@@ -107,7 +108,7 @@ func makeChain(bman *BlockProcessor, parent *types.Block, max int, db common.Dat
 
 // Create a new chain manager starting from given block
 // Effectively a fork factory
-func newChainManager(block *types.Block, eventMux *event.TypeMux, db common.Database) *ChainManager {
+func newChainManager(block *types.Block, eventMux *event.TypeMux, db *ethdb.DB) *ChainManager {
 	genesis := GenesisBlock(db)
 	bc := &ChainManager{blockDb: db, stateDb: db, genesisBlock: genesis, eventMux: eventMux, pow: FakePow{}}
 	bc.txState = state.ManageState(state.New(genesis.Root(), db))
@@ -122,7 +123,7 @@ func newChainManager(block *types.Block, eventMux *event.TypeMux, db common.Data
 }
 
 // block processor with fake pow
-func newBlockProcessor(db common.Database, cman *ChainManager, eventMux *event.TypeMux) *BlockProcessor {
+func newBlockProcessor(db *ethdb.DB, cman *ChainManager, eventMux *event.TypeMux) *BlockProcessor {
 	chainMan := newChainManager(nil, eventMux, db)
 	txpool := NewTxPool(eventMux, chainMan.State, chainMan.GasLimit)
 	bman := NewBlockProcessor(db, db, FakePow{}, txpool, chainMan, eventMux)
@@ -131,7 +132,7 @@ func newBlockProcessor(db common.Database, cman *ChainManager, eventMux *event.T
 
 // Make a new, deterministic canonical chain by running InsertChain
 // on result of makeChain
-func newCanonical(n int, db common.Database) (*BlockProcessor, error) {
+func newCanonical(n int, db *ethdb.DB) (*BlockProcessor, error) {
 	eventMux := &event.TypeMux{}
 
 	bman := newBlockProcessor(db, newChainManager(nil, eventMux, db), eventMux)

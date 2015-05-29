@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/logger"
 	"github.com/ethereum/go-ethereum/logger/glog"
@@ -81,8 +82,8 @@ func CalcGasLimit(parent *types.Block) *big.Int {
 
 type ChainManager struct {
 	//eth          EthManager
-	blockDb      common.Database
-	stateDb      common.Database
+	blockDb      *ethdb.DB
+	stateDb      *ethdb.DB
 	processor    types.BlockProcessor
 	eventMux     *event.TypeMux
 	genesisBlock *types.Block
@@ -108,7 +109,7 @@ type ChainManager struct {
 	pow pow.PoW
 }
 
-func NewChainManager(blockDb, stateDb common.Database, pow pow.PoW, mux *event.TypeMux) *ChainManager {
+func NewChainManager(blockDb, stateDb *ethdb.DB, pow pow.PoW, mux *event.TypeMux) *ChainManager {
 	bc := &ChainManager{
 		blockDb:      blockDb,
 		stateDb:      stateDb,

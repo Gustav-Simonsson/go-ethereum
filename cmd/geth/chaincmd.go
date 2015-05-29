@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/logger/glog"
 )
 
@@ -152,7 +153,7 @@ func hashish(x string) bool {
 	return err != nil
 }
 
-func closeAll(dbs ...common.Database) {
+func closeAll(dbs ...*ethdb.DB) {
 	for _, db := range dbs {
 		db.Close()
 	}

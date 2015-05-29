@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/ethereum/ethash"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
@@ -31,7 +30,7 @@ func thePow() pow.PoW {
 // Test fork of length N starting from block i
 func testFork(t *testing.T, bman *BlockProcessor, i, N int, f func(td1, td2 *big.Int)) {
 	// switch databases to process the new chain
-	db, err := ethdb.NewMemDatabase()
+	db, err := (ethdb.InMemory)()
 	if err != nil {
 		t.Fatal("Failed to create db:", err)
 	}
@@ -126,7 +125,7 @@ func insertChain(done chan bool, chainMan *ChainManager, chain types.Blocks, t *
 
 func TestExtendCanonical(t *testing.T) {
 	CanonicalLength := 5
-	db, err := ethdb.NewMemDatabase()
+	db, err := (ethdb.InMemory)()
 	if err != nil {
 		t.Fatal("Failed to create db:", err)
 	}
@@ -148,7 +147,7 @@ func TestExtendCanonical(t *testing.T) {
 }
 
 func TestShorterFork(t *testing.T) {
-	db, err := ethdb.NewMemDatabase()
+	db, err := (ethdb.InMemory)()
 	if err != nil {
 		t.Fatal("Failed to create db:", err)
 	}
@@ -173,7 +172,7 @@ func TestShorterFork(t *testing.T) {
 }
 
 func TestLongerFork(t *testing.T) {
-	db, err := ethdb.NewMemDatabase()
+	db, err := (ethdb.InMemory)()
 	if err != nil {
 		t.Fatal("Failed to create db:", err)
 	}
@@ -198,7 +197,7 @@ func TestLongerFork(t *testing.T) {
 }
 
 func TestEqualFork(t *testing.T) {
-	db, err := ethdb.NewMemDatabase()
+	db, err := (ethdb.InMemory)()
 	if err != nil {
 		t.Fatal("Failed to create db:", err)
 	}
@@ -222,7 +221,7 @@ func TestEqualFork(t *testing.T) {
 }
 
 func TestBrokenChain(t *testing.T) {
-	db, err := ethdb.NewMemDatabase()
+	db, err := (ethdb.InMemory)()
 	if err != nil {
 		t.Fatal("Failed to create db:", err)
 	}
@@ -230,7 +229,7 @@ func TestBrokenChain(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not make new canonical chain:", err)
 	}
-	db2, err := ethdb.NewMemDatabase()
+	db2, err := (ethdb.InMemory)()
 	if err != nil {
 		t.Fatal("Failed to create db:", err)
 	}
@@ -251,7 +250,7 @@ func TestBrokenChain(t *testing.T) {
 func TestChainInsertions(t *testing.T) {
 	t.Skip() // travil fails.
 
-	db, _ := ethdb.NewMemDatabase()
+	db, _ := (ethdb.InMemory)()
 
 	chain1, err := loadChain("valid1", t)
 	if err != nil {
@@ -293,7 +292,7 @@ func TestChainInsertions(t *testing.T) {
 func TestChainMultipleInsertions(t *testing.T) {
 	t.Skip() // travil fails.
 
-	db, _ := ethdb.NewMemDatabase()
+	db, _ := (ethdb.InMemory)()
 
 	const max = 4
 	chains := make([]types.Blocks, max)
@@ -339,7 +338,7 @@ func TestChainMultipleInsertions(t *testing.T) {
 func TestGetAncestors(t *testing.T) {
 	t.Skip() // travil fails.
 
-	db, _ := ethdb.NewMemDatabase()
+	db, _ := (ethdb.InMemory)()
 	var eventMux event.TypeMux
 	chainMan := NewChainManager(db, db, thePow(), &eventMux)
 	chain, err := loadChain("valid1", t)
@@ -377,7 +376,7 @@ func makeChainWithDiff(genesis *types.Block, d []int, seed byte) []*types.Block 
 	return chain
 }
 
-func chm(genesis *types.Block, db common.Database) *ChainManager {
+func chm(genesis *types.Block, db *ethdb.DB) *ChainManager {
 	var eventMux event.TypeMux
 	bc := &ChainManager{blockDb: db, stateDb: db, genesisBlock: genesis, eventMux: &eventMux, pow: FakePow{}}
 	bc.cache = NewBlockCache(100)
@@ -391,7 +390,7 @@ func chm(genesis *types.Block, db common.Database) *ChainManager {
 
 func TestReorgLongest(t *testing.T) {
 	t.Skip("skipped while cache is removed")
-	db, _ := ethdb.NewMemDatabase()
+	db, _ := (ethdb.InMemory)()
 	genesis := GenesisBlock(db)
 	bc := chm(genesis, db)
 
@@ -411,7 +410,7 @@ func TestReorgLongest(t *testing.T) {
 
 func TestReorgShortest(t *testing.T) {
 	t.Skip("skipped while cache is removed")
-	db, _ := ethdb.NewMemDatabase()
+	db, _ := (ethdb.InMemory)()
 	genesis := GenesisBlock(db)
 	bc := chm(genesis, db)
 

@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/logger"
 	"github.com/ethereum/go-ethereum/logger/glog"
@@ -27,8 +28,8 @@ const (
 var receiptsPre = []byte("receipts-")
 
 type BlockProcessor struct {
-	db      common.Database
-	extraDb common.Database
+	db      *ethdb.DB
+	extraDb *ethdb.DB
 	// Mutex for locking the block processor. Blocks can only be handled one at a time
 	mutex sync.Mutex
 	// Canonical block chain
@@ -45,7 +46,7 @@ type BlockProcessor struct {
 	eventMux *event.TypeMux
 }
 
-func NewBlockProcessor(db, extra common.Database, pow pow.PoW, txpool *TxPool, chainManager *ChainManager, eventMux *event.TypeMux) *BlockProcessor {
+func NewBlockProcessor(db, extra *ethdb.DB, pow pow.PoW, txpool *TxPool, chainManager *ChainManager, eventMux *event.TypeMux) *BlockProcessor {
 	sm := &BlockProcessor{
 		db:       db,
 		extraDb:  extra,
@@ -405,7 +406,7 @@ func (sm *BlockProcessor) GetLogs(block *types.Block) (logs state.Logs, err erro
 	return state.Logs(), nil
 }
 
-func getBlockReceipts(db common.Database, bhash common.Hash) (receipts types.Receipts, err error) {
+func getBlockReceipts(db *ethdb.DB, bhash common.Hash) (receipts types.Receipts, err error) {
 	var rdata []byte
 	rdata, err = db.Get(append(receiptsPre, bhash[:]...))
 
@@ -415,7 +416,7 @@ func getBlockReceipts(db common.Database, bhash common.Hash) (receipts types.Rec
 	return
 }
 
-func putTx(db common.Database, tx *types.Transaction, block *types.Block, i uint64) {
+func putTx(db *ethdb.DB, tx *types.Transaction, block *types.Block, i uint64) {
 	rlpEnc, err := rlp.EncodeToBytes(tx)
 	if err != nil {
 		glog.V(logger.Debug).Infoln("Failed encoding tx", err)
@@ -439,7 +440,7 @@ func putTx(db common.Database, tx *types.Transaction, block *types.Block, i uint
 	db.Put(append(tx.Hash().Bytes(), 0x0001), rlpMeta)
 }
 
-func putReceipts(db common.Database, hash common.Hash, receipts types.Receipts) error {
+func putReceipts(db *ethdb.DB, hash common.Hash, receipts types.Receipts) error {
 	storageReceipts := make([]*types.ReceiptForStorage, len(receipts))
 	for i, receipt := range receipts {
 		storageReceipts[i] = (*types.ReceiptForStorage)(receipt)

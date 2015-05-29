@@ -6,7 +6,6 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/tests"
@@ -87,7 +86,7 @@ func runBlockTest(ctx *cli.Context) {
 
 func runOneBlockTest(ctx *cli.Context, test *tests.BlockTest) (*eth.Ethereum, error) {
 	cfg := utils.MakeEthConfig(ClientIdentifier, Version, ctx)
-	cfg.NewDB = func(path string) (common.Database, error) { return ethdb.NewMemDatabase() }
+	cfg.NewDB = func(path string) (*ethdb.DB, error) { return ethdb.InMemory() }
 	cfg.MaxPeers = 0 // disable network
 	cfg.Shh = false  // disable whisper
 	cfg.NAT = nil    // disable port mapping

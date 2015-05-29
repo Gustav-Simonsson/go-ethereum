@@ -41,7 +41,7 @@ func (self Log) Topics() [][]byte {
 	return t
 }
 
-func StateObjectFromAccount(db common.Database, addr string, account Account) *state.StateObject {
+func StateObjectFromAccount(db *ethdb.DB, addr string, account Account) *state.StateObject {
 	obj := state.NewStateObject(common.HexToAddress(addr), db)
 	obj.SetBalance(common.Big(account.Balance))
 
@@ -91,7 +91,7 @@ func RunVmTest(p string, t *testing.T) {
 				continue
 			}
 		*/
-		db, _ := ethdb.NewMemDatabase()
+		db, _ := ethdb.InMemory()
 		statedb := state.New(common.Hash{}, db)
 		for addr, account := range test.Pre {
 			obj := StateObjectFromAccount(db, addr, account)

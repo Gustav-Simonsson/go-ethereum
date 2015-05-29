@@ -329,16 +329,16 @@ func SetupLogger(ctx *cli.Context) {
 }
 
 // MakeChain creates a chain manager from set command line flags.
-func MakeChain(ctx *cli.Context) (chain *core.ChainManager, blockDB, stateDB, extraDB common.Database) {
+func MakeChain(ctx *cli.Context) (chain *core.ChainManager, blockDB, stateDB, extraDB *ethdb.DB) {
 	dd := ctx.GlobalString(DataDirFlag.Name)
 	var err error
-	if blockDB, err = ethdb.NewLDBDatabase(filepath.Join(dd, "blockchain")); err != nil {
+	if blockDB, err = ethdb.OnDisk(filepath.Join(dd, "blockchain")); err != nil {
 		Fatalf("Could not open database: %v", err)
 	}
-	if stateDB, err = ethdb.NewLDBDatabase(filepath.Join(dd, "state")); err != nil {
+	if stateDB, err = ethdb.OnDisk(filepath.Join(dd, "state")); err != nil {
 		Fatalf("Could not open database: %v", err)
 	}
-	if extraDB, err = ethdb.NewLDBDatabase(filepath.Join(dd, "extra")); err != nil {
+	if extraDB, err = (ethdb.OnDisk)(filepath.Join(dd, "extra")); err != nil {
 		Fatalf("Could not open database: %v", err)
 	}
 

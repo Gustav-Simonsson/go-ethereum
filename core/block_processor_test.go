@@ -13,7 +13,7 @@ import (
 )
 
 func proc() (*BlockProcessor, *ChainManager) {
-	db, _ := ethdb.NewMemDatabase()
+	db, _ := (ethdb.InMemory)()
 	var mux event.TypeMux
 
 	chainMan := NewChainManager(db, db, thePow(), &mux)
@@ -39,7 +39,7 @@ func TestNumber(t *testing.T) {
 }
 
 func TestPutReceipt(t *testing.T) {
-	db, _ := ethdb.NewMemDatabase()
+	db, _ := (ethdb.InMemory)()
 
 	var addr common.Address
 	addr[0] = 1

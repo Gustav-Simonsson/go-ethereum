@@ -67,7 +67,7 @@ type Account struct {
 	Storage map[string]string
 }
 
-func StateObjectFromAccount(db common.Database, addr string, account Account) *state.StateObject {
+func StateObjectFromAccount(db *eth.DB, addr string, account Account) *state.StateObject {
 	obj := state.NewStateObject(common.HexToAddress(addr), db)
 	obj.SetBalance(common.Big(account.Balance))
 
@@ -115,7 +115,7 @@ func RunVmTest(r io.Reader) (failed int) {
 	glog.SetV(4)
 	glog.SetToStderr(true)
 	for name, test := range tests {
-		db, _ := ethdb.NewMemDatabase()
+		db, _ := ethdb.InMemory()
 		statedb := state.New(common.Hash{}, db)
 		for addr, account := range test.Pre {
 			obj := StateObjectFromAccount(db, addr, account)
