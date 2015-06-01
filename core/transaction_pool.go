@@ -113,7 +113,7 @@ func (pool *TxPool) ValidateTransaction(tx *types.Transaction) error {
 	}
 
 	// Validate curve param
-	v, _, _ := tx.Curve()
+	v, _, _ := tx.GetSignatureValues()
 	if v > 28 || v < 27 {
 		return fmt.Errorf("tx.v != (28 || 27) => %v", v)
 	}
