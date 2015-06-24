@@ -37,6 +37,13 @@ func TestBcInvalidHeaderTests(t *testing.T) {
 	}
 }
 
+func TestEthashCacheDoS(t *testing.T) {
+	err := RunBlockTest(filepath.Join(blockTestDir, "ethash_cache_epoch_dos.json"), BlockSkipTests)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestBcInvalidRLPTests(t *testing.T) {
 	err := RunBlockTest(filepath.Join(blockTestDir, "bcInvalidRLPTest.json"), BlockSkipTests)
 	if err != nil {

@@ -3,6 +3,7 @@ package types
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -49,6 +50,7 @@ type Header struct {
 }
 
 func (self *Header) Hash() common.Hash {
+	self.rlpData(true)
 	return rlpHash(self.rlpData(true))
 }
 
@@ -282,6 +284,12 @@ func (self *Block) AddReceipt(receipt *Receipt) {
 
 func (self *Block) RlpData() interface{} {
 	return []interface{}{self.header, self.transactions, self.uncles}
+}
+
+func (self *Block) RlpHex() string {
+	buf := new(bytes.Buffer)
+	rlp.Encode(buf, self.RlpData())
+	return hex.EncodeToString(buf.Bytes())
 }
 
 func (self *Block) RlpDataForStorage() interface{} {
