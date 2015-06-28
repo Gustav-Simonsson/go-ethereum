@@ -304,7 +304,7 @@ func (self *Block) SetQueued(q bool) { self.queued = q }
 
 func (self *Block) Bloom() Bloom             { return self.header.Bloom }
 func (self *Block) Coinbase() common.Address { return self.header.Coinbase }
-func (self *Block) Time() int64              { return int64(self.header.Time) }
+func (self *Block) Time() uint64             { return self.header.Time }
 func (self *Block) GasLimit() *big.Int       { return self.header.GasLimit }
 func (self *Block) GasUsed() *big.Int        { return self.header.GasUsed }
 func (self *Block) Root() common.Hash        { return self.header.Root }
