@@ -606,7 +606,9 @@ func (self *ChainManager) InsertChain(chain types.Blocks) (int, error) {
 
 		// Call in to the block processor and check for errors. It's likely that if one block fails
 		// all others will fail too (unless a known block is returned).
+		fmt.Println("FUNKY: 1")
 		logs, err := self.processor.Process(block)
+		fmt.Println("FUNKY: ", err)
 		if err != nil {
 			if IsKnownBlockErr(err) {
 				stats.ignored++

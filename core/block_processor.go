@@ -60,11 +60,13 @@ func (sm *BlockProcessor) TransitionState(statedb *state.StateDB, parent, block 
 	coinbase := statedb.GetOrNewStateObject(block.Header().Coinbase)
 	coinbase.SetGasLimit(block.Header().GasLimit)
 
+	fmt.Println("FUNKY: 8")
 	// Process the transactions on to parent state
 	receipts, err = sm.ApplyTransactions(coinbase, statedb, block, block.Transactions(), transientProcess)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("FUNKY: 9")
 
 	return receipts, nil
 }
@@ -183,7 +185,7 @@ func (sm *BlockProcessor) Process(block *types.Block) (logs state.Logs, err erro
 func (sm *BlockProcessor) processWithParent(block, parent *types.Block) (logs state.Logs, err error) {
 	// Create a new state based on the parent's root (e.g., create copy)
 	state := state.New(parent.Root(), sm.db)
-
+	fmt.Println("FUNKY: 2")
 	// Block validation
 	if err = ValidateHeader(sm.Pow, block.Header(), parent.Header(), false); err != nil {
 		return
