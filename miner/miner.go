@@ -167,7 +167,7 @@ func GPUBench(gpuid uint64) {
 	}
 	fmt.Printf("Starting benchmark (%v seconds)\n", 60)
 	go reportHashRate()
-	go e.Search(bogoBlock, stopChan, 0)
+	go e.Search(bogoBlock, stopChan, int(gpuid))
 	time.Sleep(60 * time.Second)
 	fmt.Println("OK.")
 }
