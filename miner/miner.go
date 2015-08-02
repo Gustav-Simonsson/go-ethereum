@@ -164,7 +164,7 @@ func (self *Miner) SetEtherbase(addr common.Address) {
 }
 
 func GPUBench(gpuid uint64) {
-	e := ethash.NewCL(1, []int{int(gpuid)})
+	e := ethash.NewCL([]int{int(gpuid)})
 
 	var h common.Hash
 	bogoHeader := &types.Header{

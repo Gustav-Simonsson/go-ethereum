@@ -486,7 +486,7 @@ func (s *Ethereum) StartMining(threads int) error {
 	return nil
 }
 
-func (s *Ethereum) StartGPUMining(gpus string, dagChunks bool) error {
+func (s *Ethereum) StartGPUMining(gpus string) error {
 	eb, err := s.Etherbase()
 	if err != nil {
 		err = fmt.Errorf("Cannot start mining without etherbase address: %v", err)
@@ -506,13 +506,8 @@ func (s *Ethereum) StartGPUMining(gpus string, dagChunks bool) error {
 		ids = append(ids, i)
 	}
 
-	// TODO: multiple chunks
 	// TODO: re-creating miner is a bit ugly
-	dagChunksNum := 1
-	if dagChunks {
-		dagChunksNum = 4
-	}
-	cl := ethash.NewCL(uint64(dagChunksNum), ids)
+	cl := ethash.NewCL(ids)
 	s.miner = miner.New(s, s.EventMux(), cl)
 	go s.miner.Start(eb, len(ids))
 	return nil

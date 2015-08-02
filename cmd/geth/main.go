@@ -306,7 +306,6 @@ JavaScript API. See https://github.com/ethereum/go-ethereum/wiki/Javascipt-Conso
 		utils.MinerThreadsFlag,
 		utils.MiningEnabledFlag,
 		utils.MiningGPUFlag,
-		utils.MiningGPUChunksFlag,
 		utils.AutoDAGFlag,
 		utils.NATFlag,
 		utils.NatspecEnabledFlag,
@@ -571,9 +570,8 @@ func startEth(ctx *cli.Context, eth *eth.Ethereum) {
 
 	// TODO: refactor CPU/GPU mining flags &1 logic
 	gpus := ctx.GlobalString(utils.MiningGPUFlag.Name)
-	chunks := ctx.GlobalBool(utils.MiningGPUChunksFlag.Name)
 	if gpus != "" {
-		if err := eth.StartGPUMining(gpus, chunks); err != nil {
+		if err := eth.StartGPUMining(gpus); err != nil {
 			utils.Fatalf("%v", err)
 		}
 	} else {
