@@ -70,10 +70,12 @@ func CalcTD(block, parent *types.Block) *big.Int {
 // CalcGasLimit computes the gas limit of the next block after parent.
 // The result may be modified by the caller.
 func CalcGasLimit(parent *types.Block) *big.Int {
-	decay := new(big.Int).Div(parent.GasLimit(), params.GasLimitBoundDivisor)
 	contrib := new(big.Int).Mul(parent.GasUsed(), big.NewInt(3))
 	contrib = contrib.Div(contrib, big.NewInt(2))
 	contrib = contrib.Div(contrib, params.GasLimitBoundDivisor)
+
+	decay := new(big.Int).Div(parent.GasLimit(), params.GasLimitBoundDivisor)
+	//decay.Sub(decay, big.NewInt(1))
 
 	gl := new(big.Int).Sub(parent.GasLimit(), decay)
 	gl = gl.Add(gl, contrib)
