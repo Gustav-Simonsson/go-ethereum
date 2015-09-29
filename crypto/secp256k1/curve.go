@@ -29,7 +29,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package crypto
+package secp256k1
 
 import (
 	"crypto/elliptic"
@@ -211,44 +211,9 @@ func (BitCurve *BitCurve) doubleJacobian(x, y, z *big.Int) (*big.Int, *big.Int, 
 	return x3, y3, z3
 }
 
-//TODO: double check if it is okay
-// ScalarMult returns k*(Bx,By) where k is a number in big-endian form.
 func (BitCurve *BitCurve) ScalarMult(Bx, By *big.Int, k []byte) (*big.Int, *big.Int) {
-	// We have a slight problem in that the identity of the group (the
-	// point at infinity) cannot be represented in (x, y) form on a finite
-	// machine. Thus the standard add/double algorithm has to be tweaked
-	// slightly: our initial state is not the identity, but x, and we
-	// ignore the first true bit in |k|.  If we don't find any true bits in
-	// |k|, then we return nil, nil, because we cannot return the identity
-	// element.
-
-	Bz := new(big.Int).SetInt64(1)
-	x := Bx
-	y := By
-	z := Bz
-
-	seenFirstTrue := false
-	for _, byte := range k {
-		for bitNum := 0; bitNum < 8; bitNum++ {
-			if seenFirstTrue {
-				x, y, z = BitCurve.doubleJacobian(x, y, z)
-			}
-			if byte&0x80 == 0x80 {
-				if !seenFirstTrue {
-					seenFirstTrue = true
-				} else {
-					x, y, z = BitCurve.addJacobian(Bx, By, Bz, x, y, z)
-				}
-			}
-			byte <<= 1
-		}
-	}
-
-	if !seenFirstTrue {
-		return nil, nil
-	}
-
-	return BitCurve.affineFromJacobian(x, y, z)
+	x, y, _ := PubkeyScalarMult(elliptic.Marshal(S256(), Bx, By), k)
+	return x, y
 }
 
 // ScalarBaseMult returns k*G, where G is the base point of the group and k is

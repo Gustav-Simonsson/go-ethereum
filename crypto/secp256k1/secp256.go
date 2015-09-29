@@ -20,6 +20,7 @@ package secp256k1
 
 /*
 #cgo CFLAGS: -I./libsecp256k1
+#cgo CFLAGS: -I./libsecp256k1/src/
 #cgo darwin CFLAGS: -I/usr/local/include
 #cgo freebsd CFLAGS: -I/usr/local/include
 #cgo linux,arm CFLAGS: -I/usr/local/arm/include
@@ -35,6 +36,8 @@ package secp256k1
 #define NDEBUG
 #include "./libsecp256k1/src/secp256k1.c"
 #include "./libsecp256k1/src/modules/recovery/main_impl.h"
+#include "./libsecp256k1/src/modules/ecdh/main_impl.h"
+#include "./libsecp256k1/src/modules/ecdh/pubkey_scalar_mul.h"
 
 typedef void (*callbackFunc) (const char* msg, void* data);
 extern void secp256k1GoPanicIllegal(const char* msg, void* data);
@@ -44,8 +47,11 @@ import "C"
 
 import (
 	"errors"
+	"fmt"
+	"math/big"
 	"unsafe"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto/randentropy"
 )
 
@@ -56,13 +62,16 @@ import (
    > store private keys in buffer and shuffle (deters persistance on swap disc)
    > byte permutation (changing)
    > xor with chaning random block (to deter scanning memory for 0x63) (stream cipher?)
-   > on disk: store keys in wallets
 */
 
 // holds ptr to secp256k1_context_struct (see secp256k1/include/secp256k1.h)
-var context *C.secp256k1_context
+var (
+	context    *C.secp256k1_context
+	Secp256k1n *big.Int
+)
 
 func init() {
+	Secp256k1n = common.String2Big("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141")
 	// around 20 ms on a modern CPU.
 	context = C.secp256k1_context_create(3) // SECP256K1_START_SIGN | SECP256K1_START_VERIFY
 	C.secp256k1_context_set_illegal_callback(context, C.callbackFunc(C.secp256k1GoPanicIllegal), nil)
@@ -96,7 +105,7 @@ func GenerateKeyPair() ([]byte, []byte) {
 
 	var output_len C.size_t
 
-	_ = C.secp256k1_ec_pubkey_serialize( // always returns 1
+	C.secp256k1_ec_pubkey_serialize( // always returns 1
 		context,
 		pubkey65_ptr,
 		&output_len,
@@ -163,7 +172,7 @@ func Sign(msg []byte, seckey []byte) ([]byte, error) {
 	sig_serialized_ptr := (*C.uchar)(unsafe.Pointer(&sig_serialized[0]))
 	var recid C.int
 
-	_ = C.secp256k1_ecdsa_recoverable_signature_serialize_compact(
+	C.secp256k1_ecdsa_recoverable_signature_serialize_compact(
 		context,
 		sig_serialized_ptr, // 64 byte compact signature
 		&recid,
@@ -253,4 +262,53 @@ func checkSignature(sig []byte) error {
 		return ErrInvalidRecoveryID
 	}
 	return nil
+}
+
+func PubkeyScalarMult(pubkey0, scalar []byte) (*big.Int, *big.Int, error) {
+	if len(scalar) < 32 {
+		padded := make([]byte, 32)
+		copy(padded[32-len(scalar):], scalar)
+		scalar = padded
+	}
+	x_res := make([]byte, 32)
+	y_res := make([]byte, 32)
+	pubkey1 := make([]byte, 64)
+
+	pubkey0_ptr := (*C.uchar)(unsafe.Pointer(&pubkey0[0]))
+	pubkey0_len := C.size_t(len(pubkey0))
+	pubkey1_ptr := (*C.secp256k1_pubkey)(unsafe.Pointer(&pubkey1[0]))
+	res := C.secp256k1_ec_pubkey_parse(
+		context,
+		pubkey1_ptr,
+		pubkey0_ptr,
+		pubkey0_len,
+	)
+	if res != C.int(1) {
+		return nil, nil, fmt.Errorf("pubkey could not be parsed or is invalid: %d", res)
+	}
+
+	x_res_ptr := (*C.uchar)(unsafe.Pointer(&x_res[0]))
+	y_res_ptr := (*C.uchar)(unsafe.Pointer(&y_res[0]))
+	scalar_ptr := (*C.uchar)(unsafe.Pointer(&scalar[0]))
+	res = C.secp256k1_pubkey_scalar_mul(
+		context,
+		x_res_ptr,
+		y_res_ptr,
+		pubkey1_ptr,
+		scalar_ptr,
+	)
+	if res != C.int(1) {
+		return nil, nil, errors.New("invalid scalar (zero or overflow)")
+	}
+
+	x := new(big.Int).SetBytes(x_res)
+	y := new(big.Int).SetBytes(y_res)
+
+	// TODO: ensure all instances of crypto secrets are
+	// cleared from memory
+	for i := 0; i < 32; i++ {
+		x_res[i] = 0
+		y_res[i] = 0
+	}
+	return x, y, nil
 }

@@ -31,13 +31,19 @@ package ecies
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 )
 
 var dumpEnc bool
@@ -65,7 +71,6 @@ func TestKDF(t *testing.T) {
 	}
 }
 
-var skLen int
 var ErrBadSharedKeys = fmt.Errorf("ecies: shared keys don't match")
 
 // cmpParams compares a set of ECIES parameters. We assume, as per the
@@ -117,7 +122,7 @@ func TestSharedKey(t *testing.T) {
 		fmt.Println(err.Error())
 		t.FailNow()
 	}
-	skLen = MaxSharedKeyLength(&prv1.PublicKey) / 2
+	skLen := MaxSharedKeyLength(&prv1.PublicKey) / 2
 
 	prv2, err := GenerateKey(rand.Reader, DefaultCurve, nil)
 	if err != nil {
@@ -143,6 +148,55 @@ func TestSharedKey(t *testing.T) {
 	}
 }
 
+func TestSharedKeyPadding(t *testing.T) {
+	// TODO: remove after refactoring packages crypto and crypto/ecies
+	GetKey := func(prv []byte) *PrivateKey {
+		priv := new(ecdsa.PrivateKey)
+		priv.PublicKey.Curve = secp256k1.S256()
+		priv.D = common.BigD(prv)
+		priv.PublicKey.X, priv.PublicKey.Y = secp256k1.S256().ScalarBaseMult(prv)
+		return ImportECDSA(priv)
+	}
+
+	// sanity checks
+	prv0 := GetKey(common.FromHex("1adf5c18167d96a1f9a0b1ef63be8aa27eaf6032c233b2b38f7850cf5b859fd9"))
+	prv1 := GetKey(common.FromHex("97a076fc7fcd9208240668e31c9abee952cbb6e375d1b8febc7499d6e16f1a"))
+
+	x0, _ := new(big.Int).SetString("12012462853146977858814670659466178546884590797006908289929804760089473579992", 10)
+	x1, _ := new(big.Int).SetString("48262616164574611013628103382920230979628038578315120075586024951038489929656", 10)
+	y0, _ := new(big.Int).SetString("101432462667143936679887193534460765213563370039608297033380653607318075996451", 10)
+	y1, _ := new(big.Int).SetString("62802730397591077128738533568616671135785978064913476190555263467608520385786", 10)
+
+	if prv0.PublicKey.X.Cmp(x0) != 0 {
+		t.Fatalf("mismatched pubkey.X: have: %s\n", prv0.PublicKey.X.String())
+	}
+	if prv0.PublicKey.Y.Cmp(y0) != 0 {
+		t.Fatalf("mismatched pubkey.Y: have: %s\n", prv0.PublicKey.Y.String())
+	}
+
+	if prv1.PublicKey.X.Cmp(x1) != 0 {
+		t.Fatalf("mismatched pubkey.X: have: %s\n", prv1.PublicKey.X.String())
+	}
+	if prv1.PublicKey.Y.Cmp(y1) != 0 {
+		t.Fatalf("mismatched pubkey.Y: have: %s\n", prv1.PublicKey.Y.String())
+	}
+
+	// test shared secret generation
+	sk1, err := prv0.GenerateShared(&prv1.PublicKey, 16, 16)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	sk2, err := prv1.GenerateShared(&prv0.PublicKey, 16, 16)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	if !bytes.Equal(sk1, sk2) {
+		t.Fatal(ErrBadSharedKeys.Error())
+	}
+}
+
 // Verify that the key generation code fails when too much key data is
 // requested.
 func TestTooBigSharedKey(t *testing.T) {
@@ -158,13 +212,13 @@ func TestTooBigSharedKey(t *testing.T) {
 		t.FailNow()
 	}
 
-	_, err = prv1.GenerateShared(&prv2.PublicKey, skLen*2, skLen*2)
+	_, err = prv1.GenerateShared(&prv2.PublicKey, 32, 32)
 	if err != ErrSharedKeyTooBig {
 		fmt.Println("ecdh: shared key should be too large for curve")
 		t.FailNow()
 	}
 
-	_, err = prv2.GenerateShared(&prv1.PublicKey, skLen*2, skLen*2)
+	_, err = prv2.GenerateShared(&prv1.PublicKey, 32, 32)
 	if err != ErrSharedKeyTooBig {
 		fmt.Println("ecdh: shared key should be too large for curve")
 		t.FailNow()
@@ -176,25 +230,21 @@ func TestTooBigSharedKey(t *testing.T) {
 func TestMarshalPublic(t *testing.T) {
 	prv, err := GenerateKey(rand.Reader, DefaultCurve, nil)
 	if err != nil {
-		fmt.Println(err.Error())
-		t.FailNow()
+		t.Fatalf("GenerateKey error: %s", err)
 	}
 
 	out, err := MarshalPublic(&prv.PublicKey)
 	if err != nil {
-		fmt.Println(err.Error())
-		t.FailNow()
+		t.Fatalf("MarshalPublic error: %s", err)
 	}
 
 	pub, err := UnmarshalPublic(out)
 	if err != nil {
-		fmt.Println(err.Error())
-		t.FailNow()
+		t.Fatalf("UnmarshalPublic error: %s", err)
 	}
 
 	if !cmpPublic(prv.PublicKey, *pub) {
-		fmt.Println("ecies: failed to unmarshal public key")
-		t.FailNow()
+		t.Fatal("ecies: failed to unmarshal public key")
 	}
 }
 
@@ -304,9 +354,26 @@ func BenchmarkGenSharedKeyP256(b *testing.B) {
 		fmt.Println(err.Error())
 		b.FailNow()
 	}
-
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := prv.GenerateShared(&prv.PublicKey, skLen, skLen)
+		_, err := prv.GenerateShared(&prv.PublicKey, 16, 16)
+		if err != nil {
+			fmt.Println(err.Error())
+			b.FailNow()
+		}
+	}
+}
+
+// Benchmark the generation of S256 shared keys.
+func BenchmarkGenSharedKeyS256(b *testing.B) {
+	prv, err := GenerateKey(rand.Reader, secp256k1.S256(), nil)
+	if err != nil {
+		fmt.Println(err.Error())
+		b.FailNow()
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := prv.GenerateShared(&prv.PublicKey, 16, 16)
 		if err != nil {
 			fmt.Println(err.Error())
 			b.FailNow()
@@ -509,5 +576,45 @@ func TestBasicKeyValidation(t *testing.T) {
 			fmt.Println("ecies: validated an invalid key")
 			t.FailNow()
 		}
+	}
+}
+
+// Verify GenerateShared against static values - useful when
+// debugging changes in underlying libs
+func TestSharedKeyStatic(t *testing.T) {
+	getPriv := func(s string) *PrivateKey {
+		b, _ := hex.DecodeString(s)
+		priv := new(ecdsa.PrivateKey)
+		priv.PublicKey.Curve = DefaultCurve
+		priv.D = common.BigD(b)
+		priv.PublicKey.X, priv.PublicKey.Y = DefaultCurve.ScalarBaseMult(b)
+		return ImportECDSA(priv)
+	}
+
+	prv1 := getPriv("7ebbc6a8358bc76dd73ebc557056702c8cfc34e5cfcd90eb83af0347575fd2ad")
+	prv2 := getPriv("6a3d6396903245bba5837752b9e0348874e72db0c4e11e9c485a81b4ea4353b9")
+
+	skLen := MaxSharedKeyLength(&prv1.PublicKey) / 2
+
+	sk1, err := prv1.GenerateShared(&prv2.PublicKey, skLen, skLen)
+	if err != nil {
+		fmt.Println(err.Error())
+		t.FailNow()
+	}
+
+	sk2, err := prv2.GenerateShared(&prv1.PublicKey, skLen, skLen)
+	if err != nil {
+		fmt.Println(err.Error())
+		t.FailNow()
+	}
+
+	if !bytes.Equal(sk1, sk2) {
+		fmt.Println(ErrBadSharedKeys.Error())
+		t.FailNow()
+	}
+
+	sk, _ := hex.DecodeString("167ccc13ac5e8a26b131c3446030c60fbfac6aa8e31149d0869f93626a4cdf62")
+	if !bytes.Equal(sk1, sk) {
+		t.Fatalf("shared secret mismatch: want: %x have: %x", sk, sk1)
 	}
 }
