@@ -142,7 +142,7 @@ func (cst cntSemaTest) Generate(rand *mrand.Rand, size int) reflect.Value {
 		capacity:       uint32(rand.Int()),
 		acquirers:      uint32(rand.Int()) % 20,
 		releasers:      uint32(rand.Int()) % 20,
-		acquireTimeout: time.Millisecond * uint32(rand.Int()) % 100,
+		acquireTimeout: (time.Duration(rand.Int()%100) * 1000000), // 0-100 ms
 		goSched:        (rand.Int() % 2) == 0,
 	}
 	return reflect.ValueOf(st)
