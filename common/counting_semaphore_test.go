@@ -133,48 +133,40 @@ func TestCntSemaQuick(t *testing.T) {
 
 	f := func(cst cntSemaTest) bool {
 		sem := NewCntSema(cst.capacity)
-		pleaseRelease := make(chan uint32, cst.releasers)
-		pleaseAcquire := make(chan uint32, cst.acquirers)
 		releaseW := new(sync.WaitGroup)
 		acquireW := new(sync.WaitGroup)
 
-		Releaser := func() {
-			for rv := range pleaseRelease {
+		Releaser := func(c chan uint32) {
+			for rv := range c {
 				sem.Release(rv)
 			}
 			releaseW.Done()
 		}
-		Acquirer := func() {
-			for rv := range pleaseAcquire {
+		Acquirer := func(c chan uint32) {
+			for rv := range c {
 				if err := sem.Acquire(rv, cst.acquireTimeout); err != nil {
 					// TODO: fail / stop the thing
 					t.Fatalf("acquire failed: %v (count: %d)", err, sem.get())
 				}
 			}
+			fmt.Println("FUNKY acquirer done:")
 			acquireW.Done()
 		}
 
-		defer func() {
-			close(pleaseRelease)
-			releaseW.Wait()
-			c := sem.get()
-			// TODO: how to handle test failures after end of quickcheck callback?
-			if c != cst.capacity {
-				t.Fatalf("unexpected final waitcount: %d", c)
-			}
-		}()
-
-		releaseW.Add(cst.releasers)
-		acquireW.Add(cst.acquirers)
-
-		for i := 0; i < cst.releasers; i++ {
-			go Releaser()
-		}
-		for i := 0; i < cst.acquirers; i++ {
-			go Acquirer()
-		}
-
 		for i := 0; i < subIterations; i++ {
+			releaseW.Add(cst.releasers)
+			acquireW.Add(cst.acquirers)
+
+			pleaseRelease := make(chan uint32, cst.releasers)
+			pleaseAcquire := make(chan uint32, cst.acquirers)
+
+			for i := 0; i < cst.releasers; i++ {
+				go Releaser(pleaseRelease)
+			}
+			for i := 0; i < cst.acquirers; i++ {
+				go Acquirer(pleaseAcquire)
+			}
+
 			// TODO: support interleaving acquire/release calls
 			sendToChannel := func(c chan uint32) {
 				for i := uint32(0); i < cst.capacity; {
@@ -183,13 +175,25 @@ func TestCntSemaQuick(t *testing.T) {
 						rv = cst.capacity - i
 					}
 					i += rv
+					fmt.Println("FUNKY sending:")
 					c <- rv
 				}
 			}
 			sendToChannel(pleaseAcquire)
-			acquireW.Wait()
 			close(pleaseAcquire)
+			fmt.Println("FUNKY 1:", cst.acquirers)
+			acquireW.Wait()
+
 			sendToChannel(pleaseRelease)
+			close(pleaseRelease)
+			fmt.Println("FUNKY 2:")
+			releaseW.Wait()
+
+			c := sem.get()
+			// TODO: how to handle test failures after end of quickcheck callback?
+			if c != cst.capacity {
+				t.Fatalf("unexpected final waitcount: %d", c)
+			}
 		}
 		return true
 	}
