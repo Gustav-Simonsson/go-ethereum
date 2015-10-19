@@ -135,13 +135,14 @@ func TestCntSemaQuick(t *testing.T) {
 		sem := NewCntSema(cst.capacity)
 		pleaseRelease := make(chan uint32, cst.releasers)
 		pleaseAcquire := make(chan uint32, cst.acquirers)
-		w := new(sync.WaitGroup)
+		releaseW := new(sync.WaitGroup)
+		acquireW := new(sync.WaitGroup)
 
 		Releaser := func() {
 			for rv := range pleaseRelease {
 				sem.Release(rv)
 			}
-			w.Done()
+			releaseW.Done()
 		}
 		Acquirer := func() {
 			for rv := range pleaseAcquire {
@@ -150,12 +151,12 @@ func TestCntSemaQuick(t *testing.T) {
 					t.Fatalf("acquire failed: %v (count: %d)", err, sem.get())
 				}
 			}
-			w.Done()
+			acquireW.Done()
 		}
 
 		defer func() {
 			close(pleaseRelease)
-			w.Wait()
+			releaseW.Wait()
 			c := sem.get()
 			// TODO: how to handle test failures after end of quickcheck callback?
 			if c != cst.capacity {
@@ -163,8 +164,8 @@ func TestCntSemaQuick(t *testing.T) {
 			}
 		}()
 
-		w.Add(cst.releasers)
-		w.Add(cst.acquirers)
+		releaseW.Add(cst.releasers)
+		acquireW.Add(cst.acquirers)
 
 		for i := 0; i < cst.releasers; i++ {
 			go Releaser()
@@ -175,18 +176,20 @@ func TestCntSemaQuick(t *testing.T) {
 
 		for i := 0; i < subIterations; i++ {
 			// TODO: support interleaving acquire/release calls
-			sendToChannel := func(c *chan uint32) {
+			sendToChannel := func(c chan uint32) {
 				for i := uint32(0); i < cst.capacity; {
 					rv := mrand.Uint32() % cst.capacity
 					if i+rv > cst.capacity {
 						rv = cst.capacity - i
 					}
 					i += rv
-					*c <- rv
+					c <- rv
 				}
 			}
-			sendToChannel(&pleaseAcquire)
-			sendToChannel(&pleaseRelease)
+			sendToChannel(pleaseAcquire)
+			acquireW.Wait()
+			close(pleaseAcquire)
+			sendToChannel(pleaseRelease)
 		}
 		return true
 	}
@@ -208,6 +211,5 @@ func (cst cntSemaTest) Generate(rand *mrand.Rand, size int) reflect.Value {
 		acquireTimeout: (time.Duration(rand.Int()%100) * 1000000) + 1000000, // 1-100 ms
 		goSched:        (rand.Int() % 2) == 0,
 	}
-	fmt.Println("FUNKY :", st.capacity)
 	return reflect.ValueOf(st)
 }
