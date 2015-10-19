@@ -117,21 +117,84 @@ func TestCntSemaRace(t *testing.T) {
 
 // property-based test
 type cntSemaTest struct {
-	capacity, acquirers, releasers uint32
-	acquireTimeout                 time.Duration
-	goSched                        bool
+	capacity             uint32
+	acquirers, releasers int
+	acquireTimeout       time.Duration
+	goSched              bool
 }
 
 func TestCntSemaQuick(t *testing.T) {
+	var qcIterations = 2000
+	var subIterations = 100
+
 	seed, _ := crand.Int(crand.Reader, big.NewInt(math.MaxInt64))
 	fmt.Println("quick testing using seed:", seed.Int64())
 	testRand := mrand.New(mrand.NewSource(seed.Int64()))
 
-	f := func(cst cntSemaTest) {
+	f := func(cst cntSemaTest) bool {
+		sem := NewCntSema(cst.capacity)
+		pleaseRelease := make(chan uint32, cst.releasers)
+		pleaseAcquire := make(chan uint32, cst.acquirers)
+		w := new(sync.WaitGroup)
 
+		Releaser := func() {
+			for rv := range pleaseRelease {
+				sem.Release(rv)
+			}
+			w.Done()
+		}
+		Acquirer := func() {
+			for rv := range pleaseAcquire {
+				if err := sem.Acquire(rv, cst.acquireTimeout); err != nil {
+					// TODO: fail / stop the thing
+					t.Fatalf("acquire failed: %v (count: %d)", err, sem.get())
+				}
+			}
+			w.Done()
+		}
+
+		defer func() {
+			close(pleaseRelease)
+			w.Wait()
+			c := sem.get()
+			// TODO: how to handle test failures after end of quickcheck callback?
+			if c != cst.capacity {
+				t.Fatalf("unexpected final waitcount: %d", c)
+			}
+		}()
+
+		w.Add(cst.releasers)
+		w.Add(cst.acquirers)
+
+		for i := 0; i < cst.releasers; i++ {
+			go Releaser()
+		}
+		for i := 0; i < cst.acquirers; i++ {
+			go Acquirer()
+		}
+
+		for i := 0; i < subIterations; i++ {
+			// TODO: support interleaving acquire/release calls
+			sendToChannel := func(c *chan uint32) {
+				for i := uint32(0); i < cst.capacity; {
+					rv := mrand.Uint32() % cst.capacity
+					if i+rv > cst.capacity {
+						rv = cst.capacity - i
+					}
+					i += rv
+					*c <- rv
+				}
+			}
+			sendToChannel(&pleaseAcquire)
+			sendToChannel(&pleaseRelease)
+		}
+		return true
 	}
 
-	config := &quick.Config{Rand: testRand}
+	config := &quick.Config{
+		MaxCount: qcIterations,
+		Rand:     testRand,
+	}
 	if err := quick.Check(f, config); err != nil {
 		t.Error(err)
 	}
@@ -140,10 +203,11 @@ func TestCntSemaQuick(t *testing.T) {
 func (cst cntSemaTest) Generate(rand *mrand.Rand, size int) reflect.Value {
 	st := cntSemaTest{
 		capacity:       uint32(rand.Int()),
-		acquirers:      uint32(rand.Int()) % 20,
-		releasers:      uint32(rand.Int()) % 20,
-		acquireTimeout: (time.Duration(rand.Int()%100) * 1000000), // 0-100 ms
+		acquirers:      (rand.Int() % 50) + 1,
+		releasers:      (rand.Int() % 50) + 1,
+		acquireTimeout: (time.Duration(rand.Int()%100) * 1000000) + 1000000, // 1-100 ms
 		goSched:        (rand.Int() % 2) == 0,
 	}
+	fmt.Println("FUNKY :", st.capacity)
 	return reflect.ValueOf(st)
 }
