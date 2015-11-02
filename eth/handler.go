@@ -609,6 +609,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		}
 
 	case msg.Code == TxMsg:
+		fmt.Println("TX_TRACE: tx(s) received from peer.")
 		// Transactions arrived, parse all of them and deliver to the pool
 		var txs []*types.Transaction
 		if err := msg.Decode(&txs); err != nil {
@@ -627,6 +628,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 				RemoteId: p.ID().String(),
 			})
 		}
+		fmt.Printf("TX_TRACE: adding %d tx(s) to pool.\n", len(txs))
 		pm.txpool.AddTransactions(txs)
 
 	default:
@@ -678,7 +680,8 @@ func (pm *ProtocolManager) BroadcastTx(hash common.Hash, tx *types.Transaction) 
 	peers := pm.peers.PeersWithoutTx(hash)
 	//FIXME include this again: peers = peers[:int(math.Sqrt(float64(len(peers))))]
 	for _, peer := range peers {
-		peer.SendTransactions(types.Transactions{tx})
+		err := peer.SendTransactions(types.Transactions{tx})
+		fmt.Printf("TX_TRACE: sent tx on the wire to peer: %s error: %s\n", peer.String(), err)
 	}
 	glog.V(logger.Detail).Infoln("broadcast tx to", len(peers), "peers")
 }
@@ -699,6 +702,7 @@ func (self *ProtocolManager) txBroadcastLoop() {
 	// automatically stops if unsubscribe
 	for obj := range self.txSub.Chan() {
 		event := obj.(core.TxPreEvent)
+		fmt.Printf("TX_TRACE: (re) broadcasting tx: %x\n", event.Tx.Hash())
 		self.BroadcastTx(event.Tx.Hash(), event.Tx)
 	}
 }
