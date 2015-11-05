@@ -313,6 +313,7 @@ func (self *TxPool) AddTransactions(txs []*types.Transaction) {
 			glog.V(logger.Debug).Infoln("tx error:", err)
 		} else {
 			h := tx.Hash()
+			fmt.Printf("TX_TRACE: added tx to pool: %x\n", h)
 			glog.V(logger.Debug).Infof("tx %x\n", h[:4])
 		}
 	}

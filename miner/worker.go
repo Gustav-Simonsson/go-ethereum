@@ -241,6 +241,7 @@ func (self *worker) update() {
 				self.possibleUncles[ev.Block.Hash()] = ev.Block
 				self.uncleMu.Unlock()
 			case core.TxPreEvent:
+				fmt.Printf("TX_TRACE: miner: got tx event: %x\n", ev.Tx.Hash())
 				// Apply transaction to the pending state if we're not mining
 				if atomic.LoadInt32(&self.mining) == 0 {
 					self.currentMu.Lock()
@@ -616,6 +617,7 @@ func (env *Work) commitTransactions(transactions types.Transactions, gasPrice *b
 		env.state.StartRecord(tx.Hash(), common.Hash{}, 0)
 
 		err := env.commitTransaction(tx, proc, gp)
+		fmt.Printf("TX_TRACE: miner: commited tx: %x error: %v\n", tx.Hash(), err)
 		switch {
 		case core.IsGasLimitErr(err):
 			// ignore the transactor so no nonce errors will be thrown for this account
