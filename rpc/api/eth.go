@@ -70,6 +70,8 @@ var (
 		"eth_getData":                             (*ethApi).GetData,
 		"eth_getCode":                             (*ethApi).GetData,
 		"eth_getNatSpec":                          (*ethApi).GetNatSpec,
+		"eth_encrypt":                             (*ethApi).Encrypt,
+		"eth_decrypt":                             (*ethApi).Decrypt,
 		"eth_sign":                                (*ethApi).Sign,
 		"eth_sendRawTransaction":                  (*ethApi).SubmitTransaction,
 		"eth_submitTransaction":                   (*ethApi).SubmitTransaction,
@@ -282,6 +284,30 @@ func (self *ethApi) Sign(req *shared.Request) (interface{}, error) {
 		return nil, shared.NewDecodeParamError(err.Error())
 	}
 	v, err := self.xeth.Sign(args.From, args.Data, false)
+	if err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+func (self *ethApi) Encrypt(req *shared.Request) (interface{}, error) {
+	args := new(NewSigArgs)
+	if err := self.codec.Decode(req.Params, &args); err != nil {
+		return nil, shared.NewDecodeParamError(err.Error())
+	}
+	v, err := self.xeth.SymCrypt(args.From, args.Data, false, true)
+	if err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+func (self *ethApi) Decrypt(req *shared.Request) (interface{}, error) {
+	args := new(NewSigArgs)
+	if err := self.codec.Decode(req.Params, &args); err != nil {
+		return nil, shared.NewDecodeParamError(err.Error())
+	}
+	v, err := self.xeth.SymCrypt(args.From, args.Data, false, false)
 	if err != nil {
 		return nil, err
 	}

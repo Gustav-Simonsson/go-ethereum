@@ -54,3 +54,32 @@ func TestBox(t *testing.T) {
 	}
 
 }
+
+func TestAccountSymEnc(t *testing.T) {
+	priv1 := ToECDSA(common.Hex2Bytes("4b50fa71f5c3eeb8fdc452224b2395af2fcc3d125e06c32c82e048c0559db03f"))
+
+	msg := []byte("Rebecca")
+	ct, err := SymEncrypt(priv1, msg)
+	if err != nil {
+		fmt.Println(err.Error())
+		t.FailNow()
+	}
+
+	pt, err := SymDecrypt(priv1, ct)
+	if err != nil {
+		fmt.Println(err.Error())
+		t.FailNow()
+	}
+
+	if !bytes.Equal(pt, msg) {
+		fmt.Println("symmetric enc: plaintext doesn't match message")
+		t.FailNow()
+	}
+
+	_, err = SymDecrypt(priv1, pt)
+	if err == nil {
+		fmt.Println("symmetric enc: encryption should not have succeeded")
+		t.FailNow()
+	}
+
+}

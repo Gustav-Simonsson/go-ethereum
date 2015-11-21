@@ -87,6 +87,20 @@ func (am *Manager) Sign(a Account, toSign []byte) (signature []byte, err error) 
 	return signature, err
 }
 
+func (am *Manager) Crypt(a Account, toCrypt []byte, encrypt bool) ([]byte, error) {
+	am.mutex.RLock()
+	defer am.mutex.RUnlock()
+	unlockedKey, found := am.unlocked[a.Address]
+	if !found {
+		return nil, ErrLocked
+	}
+	if encrypt {
+		return crypto.SymEncrypt(unlockedKey.PrivateKey, toCrypt)
+	} else {
+		return crypto.SymDecrypt(unlockedKey.PrivateKey, toCrypt)
+	}
+}
+
 // Unlock unlocks the given account indefinitely.
 func (am *Manager) Unlock(addr common.Address, keyAuth string) error {
 	return am.TimedUnlock(addr, keyAuth, 0)

@@ -871,6 +871,46 @@ func (self *XEth) Sign(fromStr, hashStr string, didUnlock bool) (string, error) 
 	return common.ToHex(sig), nil
 }
 
+// TODO: refactor the parts common with doSign
+func (self *XEth) doCrypt(from common.Address, toCrypt []byte, didUnlock, encrypt bool) ([]byte, error) {
+	sig, err := self.backend.AccountManager().Crypt(accounts.Account{Address: from}, toCrypt, encrypt)
+	if err == accounts.ErrLocked {
+		if didUnlock {
+			return nil, fmt.Errorf("signer account still locked after successful unlock")
+		}
+		if !self.frontend.UnlockAccount(from.Bytes()) {
+			return nil, fmt.Errorf("could not unlock signer account")
+		}
+		// retry signing, the account should now be unlocked.
+		return self.doCrypt(from, toCrypt, true, encrypt)
+	} else if err != nil {
+		return nil, err
+	}
+	return sig, nil
+}
+
+func (self *XEth) SymCrypt(fromStr, toCryptStr string, didUnlock, encrypt bool) (string, error) {
+	from := common.HexToAddress(fromStr)
+	var toCrypt []byte
+	if encrypt {
+		toCrypt = []byte(toCryptStr)
+	} else {
+		toCrypt = common.FromHex(toCryptStr)
+	}
+	res, err := self.doCrypt(from, toCrypt, didUnlock, encrypt)
+	if err != nil {
+		return "", err
+	}
+	var resStr string
+	if encrypt {
+		resStr = common.ToHex(res)
+	} else {
+		resStr = string(res)
+	}
+
+	return resStr, nil
+}
+
 func isAddress(addr string) bool {
 	return addrReg.MatchString(addr)
 }

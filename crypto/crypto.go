@@ -17,6 +17,7 @@
 package crypto
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/ecdsa"
@@ -35,6 +36,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
+	"github.com/ethereum/go-ethereum/crypto/randentropy"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -211,6 +213,59 @@ func Encrypt(pub *ecdsa.PublicKey, message []byte) ([]byte, error) {
 func Decrypt(prv *ecdsa.PrivateKey, ct []byte) ([]byte, error) {
 	key := ecies.ImportECDSA(prv)
 	return key.Decrypt(rand.Reader, ct, nil, nil)
+}
+
+type SymEncrypted struct {
+	Addr       []byte // of private key used as enc key
+	IV         []byte
+	CipherText []byte
+	MAC        []byte
+}
+
+// simplified symmetric encryption helper for use in contracts,
+// derived from passphrase keystore scheme. replace KDF with SHA3
+// since we use an account private key as enc key. shorten MAC to 16 bytes
+func SymEncrypt(priv *ecdsa.PrivateKey, msg []byte) ([]byte, error) {
+	derivedKey := Sha3(FromECDSA(priv))
+	iv := randentropy.GetEntropyCSPRNG(aes.BlockSize) // 16
+	cipherText, err := aesCTRXOR(derivedKey[:16], msg, iv)
+	if err != nil {
+		return nil, err
+	}
+	mac := Sha3(derivedKey[16:32], cipherText)
+	symEncrypted := SymEncrypted{
+		Addr:       PubkeyToAddress(priv.PublicKey).Bytes(),
+		IV:         iv,
+		CipherText: cipherText,
+		MAC:        mac[:16],
+	}
+	buf := new(bytes.Buffer)
+	err = rlp.Encode(buf, symEncrypted)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func SymDecrypt(priv *ecdsa.PrivateKey, enc []byte) ([]byte, error) {
+	derivedKey := Sha3(FromECDSA(priv))
+	se := new(SymEncrypted)
+	r := bytes.NewReader(enc)
+	err := rlp.Decode(r, se)
+	if err != nil {
+		return nil, err
+	}
+
+	calculatedMAC := Sha3(derivedKey[16:32], se.CipherText)
+	if !bytes.Equal(calculatedMAC[:16], se.MAC) {
+		return nil, errors.New("Decryption failed: MAC mismatch")
+	}
+
+	plainText, err := aesCTRXOR(derivedKey[:16], se.CipherText, se.IV)
+	if err != nil {
+		return nil, err
+	}
+	return plainText, nil
 }
 
 // Used only by block tests.
