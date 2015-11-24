@@ -20,18 +20,23 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math"
 	"math/big"
+	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/ethereum/ethash"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/versions"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -766,4 +771,84 @@ func MakeChain(ctx *cli.Context) (chain *core.BlockChain, chainDb ethdb.Database
 		Fatalf("Could not start chainmanager: %v", err)
 	}
 	return chain, chainDb
+}
+
+func IpcSocketPath(ctx *cli.Context) (ipcpath string) {
+	if runtime.GOOS == "windows" {
+		ipcpath = common.DefaultIpcPath()
+		if ctx.GlobalIsSet(IPCPathFlag.Name) {
+			ipcpath = ctx.GlobalString(IPCPathFlag.Name)
+		}
+	} else {
+		ipcpath = common.DefaultIpcPath()
+		if ctx.GlobalIsSet(DataDirFlag.Name) {
+			ipcpath = filepath.Join(ctx.GlobalString(DataDirFlag.Name), "geth.ipc")
+		}
+		if ctx.GlobalIsSet(IPCPathFlag.Name) {
+			ipcpath = ctx.GlobalString(IPCPathFlag.Name)
+		}
+	}
+
+	return
+}
+
+// StartIPC starts a IPC JSON-RPC API server.
+func StartIPC(stack *node.Node, ctx *cli.Context) error {
+	config := comms.IpcConfig{
+		Endpoint: IpcSocketPath(ctx),
+	}
+
+	initializer := func(conn net.Conn) (comms.Stopper, shared.EthereumApi, error) {
+		var ethereum *eth.Ethereum
+		if err := stack.Service(&ethereum); err != nil {
+			return nil, nil, err
+		}
+		fe := useragent.NewRemoteFrontend(conn, ethereum.AccountManager())
+		xeth := xeth.New(stack, fe)
+		apis, err := api.ParseApiString(ctx.GlobalString(IPCApiFlag.Name), codec.JSON, xeth, stack)
+		if err != nil {
+			return nil, nil, err
+		}
+		return xeth, api.Merge(apis...), nil
+	}
+	return comms.StartIpc(config, codec.JSON, initializer)
+}
+
+// StartRPC starts a HTTP JSON-RPC API server.
+func StartRPC(stack *node.Node, ctx *cli.Context) error {
+	config := comms.HttpConfig{
+		ListenAddress: ctx.GlobalString(RPCListenAddrFlag.Name),
+		ListenPort:    uint(ctx.GlobalInt(RPCPortFlag.Name)),
+		CorsDomain:    ctx.GlobalString(RPCCORSDomainFlag.Name),
+	}
+
+	xeth := xeth.New(stack, nil)
+	// TODO: this is probably not the right place to launch this
+	versionCheck := func() {
+		for {
+			time.Sleep(time.Second * 3)
+			// TODO: passing xeth as parameter will upset some people
+			_, err := versions.Get(xeth, stack.Server().Name)
+			if err != nil {
+				glog.V(logger.Error).Infof("Could not query geth version contract: %s", err)
+			}
+			time.Sleep(time.Second * 600)
+		}
+	}
+	go versionCheck()
+
+	codec := codec.JSON
+
+	apis, err := api.ParseApiString(ctx.GlobalString(RpcApiFlag.Name), codec, xeth, stack)
+	if err != nil {
+		return err
+	}
+	return comms.StartHttp(config, codec, api.Merge(apis...))
+}
+
+func StartPProf(ctx *cli.Context) {
+	address := fmt.Sprintf("localhost:%d", ctx.GlobalInt(PProfPortFlag.Name))
+	go func() {
+		log.Println(http.ListenAndServe(address, nil))
+	}()
 }
