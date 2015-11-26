@@ -36,7 +36,14 @@ import (
 	"io"
 	"math/big"
 	"sync"
+	"unsafe"
 )
+
+/*
+#include "libsecp256k1/include/secp256k1.h"
+extern int secp256k1_gocurve_scalar_mul(const secp256k1_context* ctx, const unsigned char *point, const unsigned char *scalar);
+*/
+import "C"
 
 // This code is from https://github.com/ThePiachu/GoBit and implements
 // several Koblitz elliptic curves over prime fields.
@@ -211,8 +218,36 @@ func (BitCurve *BitCurve) doubleJacobian(x, y, z *big.Int) (*big.Int, *big.Int, 
 	return x3, y3, z3
 }
 
-func (BitCurve *BitCurve) ScalarMult(Bx, By *big.Int, k []byte) (*big.Int, *big.Int) {
-	x, y, _ := PubkeyScalarMult(elliptic.Marshal(S256(), Bx, By), k)
+func (BitCurve *BitCurve) ScalarMult(Bx, By *big.Int, scalar []byte) (*big.Int, *big.Int) {
+	// Ensure scalar is exactly 32 bytes. We pad always, even if
+	// scalar is 32 bytes long, to avoid a timing side channel.
+	if len(scalar) > 32 {
+		panic("can't handle scalars > 256 bits")
+	}
+	padded := make([]byte, 32)
+	copy(padded[32-len(scalar):], scalar)
+	scalar = padded
+
+	// Do the multiplication in C, updating point.
+	point := make([]byte, 64)
+	readBits(point[:32], Bx)
+	readBits(point[32:], By)
+	pointPtr := (*C.uchar)(unsafe.Pointer(&point[0]))
+	scalarPtr := (*C.uchar)(unsafe.Pointer(&scalar[0]))
+	res := C.secp256k1_gocurve_scalar_mul(context, pointPtr, scalarPtr)
+
+	// Unpack the result and clear temporaries.
+	x := new(big.Int).SetBytes(point[:32])
+	y := new(big.Int).SetBytes(point[32:])
+	for i := range point {
+		point[i] = 0
+	}
+	for i := range padded {
+		scalar[i] = 0
+	}
+	if res != 1 {
+		return nil, nil
+	}
 	return x, y
 }
 
