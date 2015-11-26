@@ -19,10 +19,11 @@
  *           0: scalar was invalid (zero or overflow)
  *  Args:    ctx:      pointer to a context object (cannot be NULL)
  *  Out:     point:    the multiplied point (usually secret)
- *  In:      point:    pointer to a public point, encoded as two 256bit big-endian numbers.
+ *  In:      point:    pointer to a 64-byte bytepublic point,
+                       encoded as two 256bit big-endian numbers.
  *           scalar:   a 32-byte scalar with which to multiply the point
  */
-int secp256k1_gocurve_scalar_mul(const secp256k1_context* ctx, unsigned char *point, const unsigned char *scalar) {
+int secp256k1_pubkey_scalar_mul(const secp256k1_context* ctx, unsigned char *point, const unsigned char *scalar) {
     int ret = 0;
     int overflow = 0;
     secp256k1_fe feX, feY;
