@@ -161,24 +161,22 @@ func TestSharedKeyPadding(t *testing.T) {
 	// sanity checks
 	prv0 := GetKey(common.FromHex("1adf5c18167d96a1f9a0b1ef63be8aa27eaf6032c233b2b38f7850cf5b859fd9"))
 	prv1 := GetKey(common.FromHex("97a076fc7fcd9208240668e31c9abee952cbb6e375d1b8febc7499d6e16f1a"))
-
-	x0, _ := new(big.Int).SetString("12012462853146977858814670659466178546884590797006908289929804760089473579992", 10)
-	x1, _ := new(big.Int).SetString("48262616164574611013628103382920230979628038578315120075586024951038489929656", 10)
-	y0, _ := new(big.Int).SetString("101432462667143936679887193534460765213563370039608297033380653607318075996451", 10)
-	y1, _ := new(big.Int).SetString("62802730397591077128738533568616671135785978064913476190555263467608520385786", 10)
+	x0, _ := new(big.Int).SetString("1a8ed022ff7aec59dc1b440446bdda5ff6bcb3509a8b109077282b361efffbd8", 16)
+	x1, _ := new(big.Int).SetString("6ab3ac374251f638d0abb3ef596d1dc67955b507c104e5f2009724812dc027b8", 16)
+	y0, _ := new(big.Int).SetString("e040bd480b1deccc3bc40bd5b1fdcb7bfd352500b477cb9471366dbd4493f923", 16)
+	y1, _ := new(big.Int).SetString("8ad915f2b503a8be6facab6588731fefeb584fd2dfa9a77a5e0bba1ec439e4fa", 16)
 
 	if prv0.PublicKey.X.Cmp(x0) != 0 {
-		t.Fatalf("mismatched pubkey.X: have: %s\n", prv0.PublicKey.X.String())
+		t.Errorf("mismatched prv0.X:\nhave: %x\nwant: %x\n", prv0.PublicKey.X.Bytes(), x0.Bytes())
 	}
 	if prv0.PublicKey.Y.Cmp(y0) != 0 {
-		t.Fatalf("mismatched pubkey.Y: have: %s\n", prv0.PublicKey.Y.String())
+		t.Errorf("mismatched prv0.Y:\nhave: %x\nwant: %x\n", prv0.PublicKey.Y.Bytes(), y0.Bytes())
 	}
-
 	if prv1.PublicKey.X.Cmp(x1) != 0 {
-		t.Fatalf("mismatched pubkey.X: have: %s\n", prv1.PublicKey.X.String())
+		t.Errorf("mismatched prv1.X:\nhave: %x\nwant: %x\n", prv1.PublicKey.X.Bytes(), x1.Bytes())
 	}
 	if prv1.PublicKey.Y.Cmp(y1) != 0 {
-		t.Fatalf("mismatched pubkey.Y: have: %s\n", prv1.PublicKey.Y.String())
+		t.Errorf("mismatched prv1.Y:\nhave: %x\nwant: %x\n", prv1.PublicKey.Y.Bytes(), y1.Bytes())
 	}
 
 	// test shared secret generation

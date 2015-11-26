@@ -36,8 +36,7 @@ package secp256k1
 #define NDEBUG
 #include "./libsecp256k1/src/secp256k1.c"
 #include "./libsecp256k1/src/modules/recovery/main_impl.h"
-#include "./libsecp256k1/src/modules/ecdh/main_impl.h"
-#include "./libsecp256k1/src/modules/ecdh/pubkey_scalar_mul.h"
+#include "gocurve.h"
 
 typedef void (*callbackFunc) (const char* msg, void* data);
 extern void secp256k1GoPanicIllegal(const char* msg, void* data);
@@ -47,7 +46,6 @@ import "C"
 
 import (
 	"errors"
-	"fmt"
 	"math/big"
 	"unsafe"
 
@@ -87,7 +85,6 @@ var (
 func GenerateKeyPair() ([]byte, []byte) {
 	var seckey []byte = randentropy.GetEntropyCSPRNG(32)
 	var seckey_ptr *C.uchar = (*C.uchar)(unsafe.Pointer(&seckey[0]))
-
 	var pubkey64 []byte = make([]byte, 64) // secp256k1_pubkey
 	var pubkey65 []byte = make([]byte, 65) // 65 byte uncompressed pubkey
 	pubkey64_ptr := (*C.secp256k1_pubkey)(unsafe.Pointer(&pubkey64[0]))
@@ -264,51 +261,15 @@ func checkSignature(sig []byte) error {
 	return nil
 }
 
-func PubkeyScalarMult(pubkey0, scalar []byte) (*big.Int, *big.Int, error) {
-	if len(scalar) < 32 {
-		padded := make([]byte, 32)
-		copy(padded[32-len(scalar):], scalar)
-		scalar = padded
+// reads num into buf as big-endian bytes.
+func readBits(buf []byte, num *big.Int) {
+	const wordLen = int(unsafe.Sizeof(big.Word(0)))
+	i := len(buf)
+	for _, d := range num.Bits() {
+		for j := 0; j < wordLen && i > 0; j++ {
+			i--
+			buf[i] = byte(d)
+			d >>= 8
+		}
 	}
-	x_res := make([]byte, 32)
-	y_res := make([]byte, 32)
-	pubkey1 := make([]byte, 64)
-
-	pubkey0_ptr := (*C.uchar)(unsafe.Pointer(&pubkey0[0]))
-	pubkey0_len := C.size_t(len(pubkey0))
-	pubkey1_ptr := (*C.secp256k1_pubkey)(unsafe.Pointer(&pubkey1[0]))
-	res := C.secp256k1_ec_pubkey_parse(
-		context,
-		pubkey1_ptr,
-		pubkey0_ptr,
-		pubkey0_len,
-	)
-	if res != C.int(1) {
-		return nil, nil, fmt.Errorf("pubkey could not be parsed or is invalid: %d", res)
-	}
-
-	x_res_ptr := (*C.uchar)(unsafe.Pointer(&x_res[0]))
-	y_res_ptr := (*C.uchar)(unsafe.Pointer(&y_res[0]))
-	scalar_ptr := (*C.uchar)(unsafe.Pointer(&scalar[0]))
-	res = C.secp256k1_pubkey_scalar_mul(
-		context,
-		x_res_ptr,
-		y_res_ptr,
-		pubkey1_ptr,
-		scalar_ptr,
-	)
-	if res != C.int(1) {
-		return nil, nil, errors.New("invalid scalar (zero or overflow)")
-	}
-
-	x := new(big.Int).SetBytes(x_res)
-	y := new(big.Int).SetBytes(y_res)
-
-	// TODO: ensure all instances of crypto secrets are
-	// cleared from memory
-	for i := 0; i < 32; i++ {
-		x_res[i] = 0
-		y_res[i] = 0
-	}
-	return x, y, nil
 }
