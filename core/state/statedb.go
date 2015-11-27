@@ -94,6 +94,11 @@ func (self *StateDB) Logs() vm.Logs {
 	return logs
 }
 
+// TODO: this may not be the most proper thing
+func (self *StateDB) GetDB() ethdb.Database {
+	return self.db
+}
+
 func (self *StateDB) AddRefund(gas *big.Int) {
 	self.refund.Add(self.refund, gas)
 }

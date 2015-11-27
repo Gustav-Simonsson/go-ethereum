@@ -123,12 +123,13 @@ func runStateTests(tests map[string]VmTest, skipTests []string) error {
 	}
 
 	for name, test := range tests {
-		if skipTest[name] {
+		//fmt.Println("StateTest:", name)
+		if skipTest[name] || name != "createNameRegistratorPreStore1NotEnoughGas" {
 			glog.Infoln("Skipping state test", name)
-			return nil
+			continue
 		}
 
-		//fmt.Println("StateTest name:", name)
+		fmt.Println("running StateTest:", name)
 		if err := runStateTest(test); err != nil {
 			return fmt.Errorf("%s: %s\n", name, err.Error())
 		}
@@ -182,9 +183,12 @@ func runStateTest(test VmTest) error {
 	// check post state
 	for addr, account := range test.Post {
 		obj := statedb.GetStateObject(common.HexToAddress(addr))
+		if obj == nil {
+			return fmt.Errorf("did not find expected post-state account")
+		}
 
 		if obj.Balance().Cmp(common.Big(account.Balance)) != 0 {
-			return fmt.Errorf("(%x) balance failed. Expected %v, got %v => %v\n", obj.Address().Bytes()[:4], account.Balance, obj.Balance(), new(big.Int).Sub(common.Big(account.Balance), obj.Balance()))
+			return fmt.Errorf("(%x) balance failed. Expected %v, got %v\n", obj.Address().Bytes()[:4], common.String2Big(account.Balance), obj.Balance())
 		}
 
 		if obj.Nonce() != common.String2Big(account.Nonce).Uint64() {
@@ -243,6 +247,7 @@ func RunState(statedb *state.StateDB, env, tx map[string]string) ([]byte, vm.Log
 	vmenv.origin = addr
 	ret, _, err := core.ApplyMessage(vmenv, message, gaspool)
 	if core.IsNonceErr(err) || core.IsInvalidTxErr(err) || core.IsGasLimitErr(err) {
+		fmt.Printf("FUNKY: setting snapshot, err: %s\n", err)
 		statedb.Set(snapshot)
 	}
 	statedb.Commit()
