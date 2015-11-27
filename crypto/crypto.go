@@ -44,11 +44,14 @@ import (
 )
 
 var secp256k1n *big.Int
+var secp256k1nhalf *big.Int
 
 func init() {
 	// specify the params for the s256 curve
 	ecies.AddParamsForCurve(S256(), ecies.ECIES_AES128_SHA256)
 	secp256k1n = common.String2Big("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141")
+	// N / 2 == 57896044618658097711785492504343953926418782139537452191302581570759080747168
+	secp256k1nhalf = common.String2Big("0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0")
 }
 
 func Sha3(data ...[]byte) []byte {
@@ -171,12 +174,21 @@ func GenerateKey() (*ecdsa.PrivateKey, error) {
 	return ecdsa.GenerateKey(S256(), rand.Reader)
 }
 
-func ValidateSignatureValues(v byte, r, s *big.Int) bool {
+func ValidateSignatureValues(v byte, r, s *big.Int, homestead bool) bool {
 	if r.Cmp(common.Big1) < 0 || s.Cmp(common.Big1) < 0 {
 		return false
 	}
 	vint := uint32(v)
-	if r.Cmp(secp256k1n) < 0 && s.Cmp(secp256k1n) < 0 && (vint == 27 || vint == 28) {
+	// reject upper range of s values (ECDSA malleability)
+	// see discussion in secp256k1/libsecp256k1/include/secp256k1.h
+	if homestead && s.Cmp(secp256k1nhalf) > 0 {
+		return false
+	}
+	// Frontier: allow s to be in full N range
+	if s.Cmp(secp256k1n) >= 0 {
+		return false
+	}
+	if r.Cmp(secp256k1n) < 0 && (vint == 27 || vint == 28) {
 		return true
 	} else {
 		return false

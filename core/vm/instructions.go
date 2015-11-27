@@ -529,10 +529,16 @@ func opCreate(instr instruction, pc *uint64, env Environment, contract *Contract
 		dataGas.Mul(dataGas, params.CreateDataGas)
 		if contract.UseGas(dataGas) {
 			env.Db().SetCode(addr, ret)
+			stack.push(addr.Big())
+		} else {
+			if params.IsHomestead(env.BlockNumber()) {
+				env.Db().Delete(addr)
+				stack.push(new(big.Int))
+				//stack.push(addr.Big())
+			} else {
+				stack.push(addr.Big())
+			}
 		}
-
-		stack.push(addr.Big())
-
 	}
 }
 

@@ -1,0 +1,366 @@
+=== RUN   TestBcValidBlockTests
+FUNKY: timeDiff0
+FUNKY: diff1024
+FUNKY: SimpleTx3
+FUNKY: timeDiff14
+FUNKY: RecallSuicidedContractInOneBlock
+FUNKY: SimpleTx
+FUNKY: RecallSuicidedContract
+FUNKY: dataTx
+FUNKY: txEqualValue
+FUNKY: txOrder
+FUNKY: gasPrice0
+FUNKY: ExtraData32
+FUNKY: gasLimitTooHigh
+FUNKY: log1_correct
+FUNKY: timeDiff12
+FUNKY: gasLimitTooHigh2
+FUNKY: timeDiff13
+--- PASS: TestBcValidBlockTests (1.49s)
+=== RUN   TestBcUncleHeaderValidityTests
+FUNKY: gasLimitTooHighExactBound
+FUNKY: gasLimitTooLow
+FUNKY: wrongParentHash
+FUNKY: gasLimitTooLowExactBound
+FUNKY: timestampTooLow
+FUNKY: diffTooLow2
+FUNKY: wrongMixHash
+FUNKY: wrongStateRoot
+FUNKY: unknownUncleParentHash
+FUNKY: gasLimitTooHigh
+FUNKY: correct
+FUNKY: timestampTooHigh
+FUNKY: diffTooHigh
+FUNKY: diffTooLow
+FUNKY: nonceWrong
+--- PASS: TestBcUncleHeaderValidityTests (0.25s)
+=== RUN   TestBcUncleTests
+FUNKY: oneUncleGeneration7
+FUNKY: EqualUncleInTwoDifferentBlocks
+FUNKY: twoEqualUncle
+FUNKY: uncleHeaderWithGeneration0
+FUNKY: InChainUncleGrandPa
+FUNKY: oneUncleGeneration3
+FUNKY: threeUncle
+FUNKY: InChainUncle
+FUNKY: UncleIsBrother
+FUNKY: oneUncleGeneration5
+FUNKY: InChainUncleGreatGreatGreatGrandPa
+FUNKY: oneUncleGeneration6
+FUNKY: InChainUncleFather
+FUNKY: InChainUncleGreatGreatGrandPa
+FUNKY: oneUncleGeneration2
+FUNKY: uncleHeaderAtBlock2
+FUNKY: oneUncle
+FUNKY: uncleWithSameBlockNumber
+FUNKY: oneUncleGeneration4
+FUNKY: twoUncle
+FUNKY: InChainUncleGreatGreatGreatGreatGrandPa
+FUNKY: InChainUncleGreatGrandPa
+--- PASS: TestBcUncleTests (0.57s)
+=== RUN   TestBcForkUncleTests
+FUNKY: ForkUncle
+FUNKY: reusePreviousBlockAsUncleIgnoringLeadingZerosInNonce
+FUNKY: reusePreviousBlockAsUncleIgnoringLeadingZerosInMixHash
+--- PASS: TestBcForkUncleTests (0.05s)
+=== RUN   TestBcInvalidHeaderTests
+FUNKY: wrongCoinbase
+FUNKY: wrongNonce
+FUNKY: wrongParentHash2
+FUNKY: wrongUncleHash
+FUNKY: DifficultyIsZero
+FUNKY: wrongMixHash
+FUNKY: wrongTransactionsTrie
+FUNKY: wrongTimestamp
+FUNKY: GasLimitIsZero
+FUNKY: log1_wrongBlockNumber
+FUNKY: wrongStateRoot
+FUNKY: DifferentExtraData1025
+FUNKY: wrongGasLimit
+FUNKY: wrongGasUsed
+FUNKY: wrongNumber
+FUNKY: wrongParentHash
+FUNKY: wrongDifficulty
+FUNKY: ExtraData33
+FUNKY: wrongReceiptTrie
+FUNKY: ExtraData1024
+FUNKY: log1_wrongBloom
+--- PASS: TestBcInvalidHeaderTests (0.11s)
+=== RUN   TestBcInvalidRLPTests
+FUNKY: TRANSCT_gasLimit_GivenAsList
+FUNKY: BLOCK_parentHash_TooShort
+FUNKY: TRANSCT__WrongCharAtRLP_0
+FUNKY: BLOCK_transactionsTrie_GivenAsList
+FUNKY: BLOCK_uncleHash_TooLarge
+FUNKY: BLOCK_coinbase_TooShort
+FUNKY: BLOCK_mixHash_Prefixed0000
+FUNKY: BLOCK__ZeroByteAtRLP_1
+FUNKY: BLOCK__ZeroByteAtRLP_3
+FUNKY: BLOCK_HeaderGivenAsArray_1
+FUNKY: BLOCK_stateRoot_GivenAsList
+FUNKY: BLOCK_transactionsTrie_TooLarge
+FUNKY: BLOCK_difficulty_GivenAsList
+FUNKY: TRANSCT__WrongCharAtRLP_9
+FUNKY: BLOCK__RandomByteAtRLP_9
+FUNKY: BLOCK_nonce_Prefixed0000
+FUNKY: BLOCK__WrongCharAtRLP_3
+FUNKY: BLOCK__WrongCharAtRLP_6
+FUNKY: BLOCK_timestamp_GivenAsList
+FUNKY: BLOCK_parentHash_TooLarge
+FUNKY: TRANSCT_to_GivenAsList
+FUNKY: TRANSCT_HeaderGivenAsArray_0
+FUNKY: BLOCK__WrongCharAtRLP_2
+FUNKY: TRANSCT_rvalue_TooShort
+FUNKY: BLOCK_HeaderLargerThanRLP_0
+FUNKY: BLOCK_difficulty_Prefixed0000
+FUNKY: TRANSCT__ZeroByteAtRLP_1
+FUNKY: TRANSCT__ZeroByteAtRLP_3
+FUNKY: TRANSCT__RandomByteAtRLP_9
+FUNKY: TRANSCT_rvalue_Prefixed0000
+FUNKY: BLOCK__WrongCharAtRLP_0
+FUNKY: TRANSCT__RandomByteAtRLP_1
+FUNKY: TRANSCT__RandomByteAtRLP_2
+FUNKY: TRANSCT_gasLimit_Prefixed0000
+FUNKY: BLOCK_receiptTrie_TooShort
+FUNKY: TRANSCT__ZeroByteAtRLP_6
+FUNKY: BLOCK_uncleHash_GivenAsList
+FUNKY: BLOCK_gasLimit_Prefixed0000
+FUNKY: TRANSCT_svalue_GivenAsList
+FUNKY: TRANSCT__WrongCharAtRLP_1
+FUNKY: TRANSCT__WrongCharAtRLP_5
+FUNKY: TRANSCT__RandomByteAtRLP_4
+FUNKY: TRANSCT__ZeroByteAtRLP_8
+FUNKY: TRANSCT_to_Prefixed0000
+FUNKY: BLOCK_gasUsed_Prefixed0000
+FUNKY: TRANSCT_gasLimit_TooLarge
+FUNKY: TRANSCT_HeaderGivenAsArray_1
+FUNKY: BLOCK_HeaderLargerThanRLP_1
+FUNKY: BLOCK__RandomByteAtRLP_0
+FUNKY: TRANSCT_HeaderGivenAsArray_2
+FUNKY: BLOCK_mixHash_TooLarge
+FUNKY: BLOCK_mixHash_TooShort
+FUNKY: TRANSCT__WrongCharAtRLP_8
+FUNKY: BLOCK_coinbase_Prefixed0000
+FUNKY: TRANSCT__ZeroByteAtRLP_7
+FUNKY: BLOCK__WrongCharAtRLP_7
+FUNKY: TRANSCT_rvalue_GivenAsList
+FUNKY: BLOCK__RandomByteAtRLP_4
+FUNKY: BLOCK_nonce_TooLarge
+FUNKY: TRANSCT_HeaderLargerThanRLP_2
+FUNKY: TRANSCT_rvalue_TooLarge
+FUNKY: BLOCK_bloom_Prefixed0000
+FUNKY: BLOCK__ZeroByteAtRLP_7
+FUNKY: TRANSCT_svalue_Prefixed0000
+FUNKY: BLOCK__RandomByteAtRLP_1
+FUNKY: BLOCK__RandomByteAtRLP_2
+FUNKY: BLOCK_gasLimit_GivenAsList
+FUNKY: BLOCK_HeaderGivenAsArray_0
+FUNKY: BLOCK_mixHash_GivenAsList
+FUNKY: BLOCK_nonce_GivenAsList
+FUNKY: BLOCK__ZeroByteAtRLP_6
+FUNKY: TRANSCT__WrongCharAtRLP_4
+FUNKY: BLOCK_coinbase_GivenAsList
+FUNKY: TRANSCT__RandomByteAtRLP_0
+FUNKY: BLOCK_uncleHash_Prefixed0000
+FUNKY: BLOCK__ZeroByteAtRLP_8
+FUNKY: BLOCK_gasLimit_TooLarge
+FUNKY: BLOCK_timestamp_TooLarge
+FUNKY: BLOCK__WrongCharAtRLP_5
+FUNKY: BLOCK__WrongCharAtRLP_1
+FUNKY: BLOCK_transactionsTrie_Prefixed0000
+FUNKY: BLOCK_gasUsed_GivenAsList
+FUNKY: TRANSCT__RandomByteAtRLP_6
+FUNKY: TRANSCT_HeaderLargerThanRLP_0
+FUNKY: BLOCK_transactionsTrie_TooShort
+FUNKY: BLOCK__ZeroByteAtRLP_0
+FUNKY: BLOCK_receiptTrie_Prefixed0000
+FUNKY: BLOCK__WrongCharAtRLP_8
+FUNKY: BLOCK__RandomByteAtRLP_3
+FUNKY: TRANSCT__RandomByteAtRLP_5
+FUNKY: TRANSCT__RandomByteAtRLP_8
+FUNKY: TRANSCT__WrongCharAtRLP_7
+FUNKY: BLOCK_stateRoot_Prefixed0000
+FUNKY: TRANSCT__RandomByteAtRLP_7
+FUNKY: BLOCK_gasUsed_TooLarge
+FUNKY: BLOCK__ZeroByteAtRLP_4
+FUNKY: BLOCK_timestamp_Prefixed0000
+FUNKY: TRANSCT_to_TooLarge
+FUNKY: BLOCK_receiptTrie_TooLarge
+FUNKY: BLOCK_stateRoot_TooLarge
+FUNKY: BLOCK__RandomByteAtRLP_6
+FUNKY: TRANSCT__ZeroByteAtRLP_4
+FUNKY: BLOCK_difficulty_TooLarge
+FUNKY: BLOCK__RandomByteAtRLP_7
+FUNKY: BLOCK__RandomByteAtRLP_5
+FUNKY: BLOCK__RandomByteAtRLP_8
+FUNKY: TRANSCT__ZeroByteAtRLP_0
+FUNKY: TRANSCT__RandomByteAtRLP_3
+FUNKY: BLOCK__WrongCharAtRLP_4
+FUNKY: BLOCK__WrongCharAtRLP_9
+FUNKY: BLOCK_number_Prefixed0000
+FUNKY: TRANSCT_to_TooShort
+FUNKY: BLOCK_receiptTrie_GivenAsList
+FUNKY: BLOCK_parentHash_Prefixed0000
+FUNKY: BLOCK__ZeroByteAtRLP_2
+FUNKY: TRANSCT__WrongCharAtRLP_3
+FUNKY: TRANSCT__WrongCharAtRLP_6
+FUNKY: BLOCK_coinbase_TooLarge
+FUNKY: TRANSCT__ZeroByteAtRLP_5
+FUNKY: BLOCK_uncleHash_TooShort
+FUNKY: BLOCK__ZeroByteAtRLP_9
+FUNKY: BLOCK_stateRoot_TooShort
+FUNKY: TRANSCT_svalue_TooLarge
+FUNKY: BLOCK_parentHash_GivenAsList
+FUNKY: TRANSCT__ZeroByteAtRLP_2
+FUNKY: TRANSCT_HeaderLargerThanRLP_1
+FUNKY: BLOCK__ZeroByteAtRLP_5
+FUNKY: TRANSCT__WrongCharAtRLP_2
+FUNKY: TRANSCT_svalue_TooShort
+FUNKY: TRANSCT__ZeroByteAtRLP_9
+FUNKY: RLPLengthOfLengthWithFirstZeros
+--- PASS: TestBcInvalidRLPTests (0.16s)
+=== RUN   TestBcRPCAPITests
+FUNKY: RPC_API_Test
+--- PASS: TestBcRPCAPITests (0.17s)
+=== RUN   TestBcForkBlockTests
+FUNKY: SimpleTxCosts20000
+FUNKY: BlockExtraData25
+FUNKY: BlockWrongStoreSetGas
+FUNKY: BlockWrongResetGas
+FUNKY: BlockWrongStoreClears
+--- PASS: TestBcForkBlockTests (0.03s)
+=== RUN   TestBcForkStress
+FUNKY: ForkStressTest
+--- PASS: TestBcForkStress (1.52s)
+=== RUN   TestBcTotalDifficulty
+FUNKY: lotsOfBranchesOverrideAtTheEnd
+FUNKY: newChainFrom6Block
+FUNKY: sideChainWithNewMaxDifficultyStartingFromBlock3AfterBlock4
+FUNKY: lotsOfBranches
+FUNKY: lotsOfBranchesOverrideAtTheMiddle
+FUNKY: lotsOfLeafs
+FUNKY: newChainFrom5Block
+FUNKY: uncleBlockAtBlock3AfterBlock3
+FUNKY: sideChainWithMoreTransactions
+FUNKY: newChainFrom4Block
+FUNKY: uncleBlockAtBlock3afterBlock4
+--- PASS: TestBcTotalDifficulty (0.70s)
+=== RUN   TestBcWallet
+FUNKY: wallet2outOf3txs
+FUNKY: 1
+--- FAIL: TestBcWallet (0.03s)
+	block_test.go:97: wallet2outOf3txs: Block insertion into chain failed: Out of gas
+=== RUN   TestBcGasPricer
+FUNKY: notxs
+FUNKY: highGasUsage
+--- PASS: TestBcGasPricer (0.17s)
+=== RUN   TestBcRandom
+FUNKY: randomBlockTest
+--- PASS: TestBcRandom (0.01s)
+=== RUN   TestBcMultiChain
+FUNKY: UncleFromSideChain
+FUNKY: ChainAtoChainB
+FUNKY: ChainAtoChainBCallContractFormA
+FUNKY: ChainAtoChainB_blockorder2
+FUNKY: ChainAtoChainB_blockorder1
+FUNKY: ChainAtoChainB_difficultyB
+FUNKY: ChainAtoChainBtoChainA
+FUNKY: ChainAtoChainB_BlockHash
+FUNKY: ChainAtoChainBtoChainAtoChainB
+FUNKY: CallContractFromNotBestBlock
+--- PASS: TestBcMultiChain (0.40s)
+=== RUN   TestBcState
+FUNKY: SuicideCoinbase
+FUNKY: doubleTransactionToPrecompiledContract
+FUNKY: simpleSuicide
+FUNKY: CallingCanonicalContractFromFork
+FUNKY: CallingCanonicalContractFromFork_CALLCODE
+FUNKY: OOGStateCopyContainingDeletedContract
+--- PASS: TestBcState (0.10s)
+=== RUN   TestRLP
+--- PASS: TestRLP (0.00s)
+=== RUN   TestRLP_invalid
+--- PASS: TestRLP_invalid (0.00s)
+=== RUN   TestStateSystemOperations
+--- PASS: TestStateSystemOperations (0.68s)
+=== RUN   TestStateExample
+--- PASS: TestStateExample (0.01s)
+=== RUN   TestStatePreCompiledContracts
+--- PASS: TestStatePreCompiledContracts (0.35s)
+=== RUN   TestStateRecursiveCreate
+--- PASS: TestStateRecursiveCreate (1.34s)
+=== RUN   TestStateSpecial
+--- PASS: TestStateSpecial (0.46s)
+=== RUN   TestStateRefund
+--- PASS: TestStateRefund (0.10s)
+=== RUN   TestStateBlockHash
+--- PASS: TestStateBlockHash (0.61s)
+=== RUN   TestStateInitCode
+--- PASS: TestStateInitCode (0.67s)
+=== RUN   TestStateLog
+--- PASS: TestStateLog (0.24s)
+=== RUN   TestStateTransaction
+--- PASS: TestStateTransaction (0.18s)
+=== RUN   TestCallCreateCallCode
+FUNKY: 0
+--- FAIL: TestCallCreateCallCode (0.32s)
+	state_test.go:114: createNameRegistratorPreStore1NotEnoughGas: (095e7bae) balance failed. Expected 1000000000000100000, got 1000000000000099977
+		
+		
+=== RUN   TestCallCodes
+--- PASS: TestCallCodes (0.29s)
+=== RUN   TestMemory
+--- PASS: TestMemory (0.41s)
+=== RUN   TestMemoryStress
+--- SKIP: TestMemoryStress (0.00s)
+	state_test.go:134: 
+=== RUN   TestQuadraticComplexity
+--- SKIP: TestQuadraticComplexity (0.00s)
+	state_test.go:144: 
+=== RUN   TestSolidity
+--- PASS: TestSolidity (0.09s)
+=== RUN   TestWallet
+FUNKY: 1
+--- FAIL: TestWallet (0.02s)
+	state_test.go:162: walletConstructionPartial: did not find expected post-state account
+		
+=== RUN   TestStateTestsRandom
+--- PASS: TestStateTestsRandom (5.86s)
+=== RUN   TestTransactions
+--- PASS: TestTransactions (0.01s)
+=== RUN   TestWrongRLPTransactions
+--- PASS: TestWrongRLPTransactions (0.00s)
+=== RUN   Test10MBtx
+--- PASS: Test10MBtx (1.72s)
+=== RUN   TestVMArithmetic
+--- PASS: TestVMArithmetic (0.04s)
+=== RUN   TestBitwiseLogicOperation
+--- PASS: TestBitwiseLogicOperation (0.01s)
+=== RUN   TestBlockInfo
+--- PASS: TestBlockInfo (0.00s)
+=== RUN   TestEnvironmentalInfo
+--- PASS: TestEnvironmentalInfo (0.01s)
+=== RUN   TestFlowOperation
+--- PASS: TestFlowOperation (0.09s)
+=== RUN   TestLogTest
+--- PASS: TestLogTest (0.00s)
+=== RUN   TestPerformance
+--- PASS: TestPerformance (0.15s)
+=== RUN   TestPushDupSwap
+--- PASS: TestPushDupSwap (0.01s)
+=== RUN   TestVMSha3
+--- PASS: TestVMSha3 (0.01s)
+=== RUN   TestVm
+--- PASS: TestVm (0.00s)
+=== RUN   TestVmLog
+--- PASS: TestVmLog (0.01s)
+=== RUN   TestInputLimits
+--- PASS: TestInputLimits (3.76s)
+=== RUN   TestInputLimitsLight
+--- PASS: TestInputLimitsLight (1.07s)
+=== RUN   TestVMRandom
+--- PASS: TestVMRandom (0.00s)
+FAIL
+exit status 1
+FAIL	github.com/ethereum/go-ethereum/tests	24.350s
+godep: go exit status 1

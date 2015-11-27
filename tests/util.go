@@ -260,11 +260,12 @@ func NewMessage(from common.Address, to *common.Address, data []byte, value, gas
 	return Message{from, to, value, gas, price, data, nonce}
 }
 
-func (self Message) Hash() []byte                  { return nil }
-func (self Message) From() (common.Address, error) { return self.from, nil }
-func (self Message) To() *common.Address           { return self.to }
-func (self Message) GasPrice() *big.Int            { return self.price }
-func (self Message) Gas() *big.Int                 { return self.gas }
-func (self Message) Value() *big.Int               { return self.value }
-func (self Message) Nonce() uint64                 { return self.nonce }
-func (self Message) Data() []byte                  { return self.data }
+func (self Message) Hash() []byte                          { return nil }
+func (self Message) From() (common.Address, error)         { return self.from, nil }
+func (self Message) FromFrontier() (common.Address, error) { return self.from, nil }
+func (self Message) To() *common.Address                   { return self.to }
+func (self Message) GasPrice() *big.Int                    { return self.price }
+func (self Message) Gas() *big.Int                         { return self.gas }
+func (self Message) Value() *big.Int                       { return self.value }
+func (self Message) Nonce() uint64                         { return self.nonce }
+func (self Message) Data() []byte                          { return self.data }
