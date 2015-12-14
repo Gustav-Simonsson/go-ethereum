@@ -154,7 +154,7 @@ func runBlockTests(bt map[string]*BlockTest, skipTests []string) error {
 			continue
 		}
 		// test the block
-		fmt.Println("BlockTest name:", name)
+		//fmt.Println("BlockTest name:", name)
 		if err := runBlockTest(test); err != nil {
 			return fmt.Errorf("%s: %v", name, err)
 		}

@@ -214,7 +214,6 @@ func (self *StateTransition) transitionDb() (ret []byte, usedGas *big.Int, err e
 	homestead := params.IsHomestead(vmenv.BlockNumber())
 
 	contractCreation := MessageCreatesContract(msg)
-	//fmt.Printf("FUNKY: contractCreaton: %v\n", contractCreation)
 	// Pay intrinsic gas
 	if err = self.useGas(IntrinsicGas(self.data, contractCreation, homestead)); err != nil {
 		return nil, nil, InvalidTxError(err)
@@ -227,13 +226,10 @@ func (self *StateTransition) transitionDb() (ret []byte, usedGas *big.Int, err e
 			dataGas := big.NewInt(int64(len(ret)))
 			dataGas.Mul(dataGas, params.CreateDataGas)
 			if err := self.useGas(dataGas); err == nil {
-				fmt.Printf("FUNKY: 2\n")
 				self.state.SetCode(addr, ret)
 			} else {
 				glog.V(logger.Core).Infoln("Insufficient gas for creating code. Require", dataGas, "and have", self.gas)
-				fmt.Printf("FUNKY: 0\n")
 				if homestead {
-					fmt.Printf("FUNKY: 1\n")
 					vmenv.Db().Delete(addr)
 					self.refundGas()
 					self.state.AddBalance(self.env.Coinbase(), new(big.Int).Mul(self.gasUsed(), self.gasPrice))
@@ -276,8 +272,6 @@ func (self *StateTransition) refundGas() {
 	// exchanged at the original rate.
 	sender, _ := self.from() // err already checked
 	remaining := new(big.Int).Mul(self.gas, self.gasPrice)
-	fmt.Printf("FUNKY: adding gas refund ether: %v to %x\n", remaining, sender.Address())
-	fmt.Printf("FUNKY: sender balance: %v\n", sender.Balance())
 	sender.AddBalance(remaining)
 
 	// Apply refund counter, capped to half of the used gas.
@@ -289,7 +283,6 @@ func (self *StateTransition) refundGas() {
 	// Also return remaining gas to the block gas counter so it is
 	// available for the next transaction.
 	self.gp.AddGas(self.gas)
-	fmt.Printf("FUNKY: sender balance: %v\n", sender.Balance())
 }
 
 func (self *StateTransition) gasUsed() *big.Int {

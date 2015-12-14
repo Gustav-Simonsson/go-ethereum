@@ -124,12 +124,11 @@ func runStateTests(tests map[string]VmTest, skipTests []string) error {
 
 	for name, test := range tests {
 		//fmt.Println("StateTest:", name)
-		if skipTest[name] || name != "createNameRegistratorPreStore1NotEnoughGas" {
+		if skipTest[name] { //|| name != "createNameRegistratorPreStore1NotEnoughGas" {
 			glog.Infoln("Skipping state test", name)
 			continue
 		}
 
-		fmt.Println("running StateTest:", name)
 		if err := runStateTest(test); err != nil {
 			return fmt.Errorf("%s: %s\n", name, err.Error())
 		}
@@ -247,7 +246,6 @@ func RunState(statedb *state.StateDB, env, tx map[string]string) ([]byte, vm.Log
 	vmenv.origin = addr
 	ret, _, err := core.ApplyMessage(vmenv, message, gaspool)
 	if core.IsNonceErr(err) || core.IsInvalidTxErr(err) || core.IsGasLimitErr(err) {
-		fmt.Printf("FUNKY: setting snapshot, err: %s\n", err)
 		statedb.Set(snapshot)
 	}
 	statedb.Commit()
