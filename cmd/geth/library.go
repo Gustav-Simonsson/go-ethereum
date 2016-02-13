@@ -34,8 +34,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -56,6 +58,38 @@ func doAccountNew(datadir, passphrase *C.char) C.int {
 	_, err := accman.NewAccount(C.GoString(passphrase))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to create account: %v\n", err)
+		return -1
+	}
+	return 0
+}
+
+//export doUnlockAccount
+func doUnlockAccount(datadir, addrStr, passphrase, timeoutStr *C.char) C.int {
+	// similar to 'geth --unlock' + parseable timeoutStr
+	timeout, err := time.ParseDuration(C.GoString(timeoutStr))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to parse duration string: %v\n", err)
+		return -1
+	}
+
+	address := common.HexToAddress(C.GoString(addrStr))
+	accman := lightAccountManager(C.GoString(datadir))
+
+	err = accman.TimedUnlock(address, C.GoString(passphrase), timeout)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to unlock account: %v\n", err)
+		return -1
+	}
+	return 0
+}
+
+//export doLockAccount
+func doLockAccount(datadir, addrStr *C.char) C.int {
+	address := common.HexToAddress(C.GoString(addrStr))
+	accman := lightAccountManager(C.GoString(datadir))
+	err := accman.Lock(address)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to lock account: %v\n", err)
 		return -1
 	}
 	return 0
