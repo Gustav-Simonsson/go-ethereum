@@ -32,7 +32,11 @@ import "C"
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
+
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 //export doRun
@@ -43,4 +47,26 @@ func doRun(args *C.char) C.int {
 		return -1
 	}
 	return 0
+}
+
+//export doAccountNew
+func doAccountNew(datadir, passphrase *C.char) C.int {
+	// similar to 'geth account new'
+	accman := lightAccountManager(C.GoString(datadir))
+	_, err := accman.NewAccount(C.GoString(passphrase))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to create account: %v\n", err)
+		return -1
+	}
+	return 0
+}
+
+// TODO: refactor dup with flags.MakeAccountManager
+func lightAccountManager(datadir string) *accounts.Manager {
+	// light KDF for android apps
+	keystore := crypto.NewKeyStorePassphrase(
+		filepath.Join(datadir, "keystore"),
+		crypto.LightScryptN,
+		crypto.LightScryptP)
+	return accounts.NewManager(keystore)
 }
