@@ -95,6 +95,11 @@ func NewPublicEthereumAPI(e *Ethereum) *PublicEthereumAPI {
 	return &PublicEthereumAPI{e, NewGasPriceOracle(e)}
 }
 
+// ListTransactions returns the list of txs for the given address
+func (s *PublicEthereumAPI) ListTransactions(addr common.Address) ([]common.Hash, error) {
+	return s.e.addrTxSyncer.ListTransactions(addr)
+}
+
 // GasPrice returns a suggestion for a gas price.
 func (s *PublicEthereumAPI) GasPrice() *big.Int {
 	return s.gpo.SuggestPrice()

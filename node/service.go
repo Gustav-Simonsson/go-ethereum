@@ -55,6 +55,10 @@ func (ctx *ServiceContext) Service(service interface{}) error {
 	return ErrServiceUnknown
 }
 
+func (ctx *ServiceContext) DataDir() string {
+	return ctx.datadir
+}
+
 // ServiceConstructor is the function signature of the constructors needed to be
 // registered for service instantiation.
 type ServiceConstructor func(ctx *ServiceContext) (Service, error)

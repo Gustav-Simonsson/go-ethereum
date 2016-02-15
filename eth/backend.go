@@ -104,6 +104,7 @@ type Ethereum struct {
 	// Handlers
 	txPool          *core.TxPool
 	blockchain      *core.BlockChain
+	addrTxSyncer    *AddrTxSyncer
 	accountManager  *accounts.Manager
 	pow             *ethash.Ethash
 	protocolManager *ProtocolManager
@@ -229,6 +230,19 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		}
 		return nil, err
 	}
+
+	syncer, err := NewAddrTxSyncer(ctx.DataDir(), chainDb, eth.blockchain)
+	if err != nil {
+		glog.V(logger.Error).Infof("Could not start addr_txs syncer: %v", err)
+	}
+
+	eth.addrTxSyncer = syncer
+	go func() {
+		if err = eth.addrTxSyncer.SyncAddrTxs(); err != nil {
+			glog.V(logger.Error).Infof("Could not sync addr_txs db: %v", err)
+		}
+	}()
+
 	newPool := core.NewTxPool(eth.EventMux(), eth.blockchain.State, eth.blockchain.GasLimit)
 	eth.txPool = newPool
 
@@ -379,6 +393,7 @@ func (s *Ethereum) Start(srvr *p2p.Server) error {
 // Stop implements node.Service, terminating all internal goroutines used by the
 // Ethereum protocol.
 func (s *Ethereum) Stop() error {
+	s.addrTxSyncer.Stop()
 	s.blockchain.Stop()
 	s.protocolManager.Stop()
 	s.txPool.Stop()
