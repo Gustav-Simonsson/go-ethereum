@@ -18,34 +18,102 @@ package versions
 
 import (
 	"fmt"
+	"math/big"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/logger"
 	"github.com/ethereum/go-ethereum/logger/glog"
-	"github.com/ethereum/go-ethereum/xeth"
+	"github.com/ethereum/go-ethereum/node"
+	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/rpc"
 )
 
 var (
-	// TODO: add Frontier address
-	GlobalVersionsAddr   = "0x40bebcadbb4456db23fda39f261f3b2509096e9e" // test
-	dummySender          = "0x16db48070243bc37a1c59cd5bb977ad7047618be" // test
-	getVersionsSignature = "GetVersions()"
-
 	jsonlogger = logger.NewJsonLogger()
+	// TODO: add Frontier address
+	GlobalVersionsAddr   = common.HexToAddress("0x40bebcadbb4456db23fda39f261f3b2509096e9e") // test
+	dummySender          = common.HexToAddress("0x16db48070243bc37a1c59cd5bb977ad7047618be") // test
+	getVersionsSignature = "GetVersions()"
+	firstCheckTime       = time.Second * 4
+	continousCheckTime   = time.Second * 600
 )
 
+type VersionCheck struct {
+	serverName string
+	timer      *time.Timer
+	e          *eth.Ethereum
+	stop       chan bool
+	wg         sync.WaitGroup
+}
+
+// Boilerplate to satisfy node.Service interface
+func (v *VersionCheck) Protocols() []p2p.Protocol {
+	return []p2p.Protocol{}
+}
+
+func (v *VersionCheck) APIs() []rpc.API {
+	return []rpc.API{}
+}
+
+func (v *VersionCheck) Start(server *p2p.Server) error {
+	// Check version first time after a few seconds so it shows after
+	// other startup messages
+	v.serverName = server.Name
+	t := time.NewTimer(firstCheckTime)
+	v.timer = t
+	v.stop = make(chan bool)
+	v.wg.Add(1)
+	versionCheck := func() {
+		for {
+			select {
+			case <-v.stop:
+				v.wg.Done()
+			case <-v.timer.C:
+				_, err := get(v.e, v.serverName)
+				if err != nil {
+					glog.V(logger.Error).Infof("Could not query geth version contract: %s", err)
+				}
+				v.timer.Reset(continousCheckTime)
+			}
+		}
+	}
+	go versionCheck()
+	return nil
+}
+
+func (v *VersionCheck) Stop() error {
+	close(v.stop)
+	v.wg.Wait()
+	return nil
+}
+
+func NewVersionCheck(ctx *node.ServiceContext) (node.Service, error) {
+	var v VersionCheck
+	var e eth.Ethereum
+	ctx.Service(&e) // sets e to the Ethereum instance previously started
+	v.e = &e
+	return &v, nil
+}
+
 // query versions list from the(custom) accessor in the versions contract
-func Get(x *xeth.XEth, clientVersion string) (string, error) {
+func get(e *eth.Ethereum, clientVersion string) (string, error) {
 	// TODO: move common/registrar abiSignature to some util package
-	abi := common.ToHex(crypto.Sha3([]byte(getVersionsSignature))[:4])
-	res, _, err := x.Call(
-		dummySender,
-		GlobalVersionsAddr,
-		"", "3000000", "",
-		abi,
-	)
+	abi := crypto.Sha3([]byte(getVersionsSignature))[:4]
+	res, _, err := simulateCall(
+		e,
+		&dummySender,
+		&GlobalVersionsAddr,
+		big.NewInt(3000000), // gasLimit
+		big.NewInt(1),       // gasPrice
+		big.NewInt(0),       // value
+		abi)
 	if err != nil {
 		return "", err
 	}
@@ -98,3 +166,48 @@ func Get(x *xeth.XEth, clientVersion string) (string, error) {
 
 	return res, nil
 }
+
+func simulateCall(e *eth.Ethereum, from0, to *common.Address, gas, gasPrice, value *big.Int, data []byte) (string, *big.Int, error) {
+	stateCopy, err := e.BlockChain().State()
+	if err != nil {
+		return "", nil, err
+	}
+	from := stateCopy.GetOrNewStateObject(*from0)
+	from.SetBalance(common.MaxBig)
+
+	msg := callmsg{
+		from:     from,
+		to:       to,
+		gas:      gas,
+		gasPrice: gasPrice,
+		value:    value,
+		data:     data,
+	}
+
+	// Execute the call and return
+	vmenv := core.NewEnv(stateCopy, e.BlockChain(), msg, e.BlockChain().CurrentHeader())
+	gp := new(core.GasPool).AddGas(common.MaxBig)
+
+	res, gas, err := core.ApplyMessage(vmenv, msg, gp)
+	return common.ToHex(res), gas, err
+
+}
+
+// TODO: consider moving to package common or accounts/abi as it's useful for anyone
+// simulating EVM CALL
+type callmsg struct {
+	from          *state.StateObject
+	to            *common.Address
+	gas, gasPrice *big.Int
+	value         *big.Int
+	data          []byte
+}
+
+// accessor boilerplate to implement core.Message
+func (m callmsg) From() (common.Address, error) { return m.from.Address(), nil }
+func (m callmsg) Nonce() uint64                 { return m.from.Nonce() }
+func (m callmsg) To() *common.Address           { return m.to }
+func (m callmsg) GasPrice() *big.Int            { return m.gasPrice }
+func (m callmsg) Gas() *big.Int                 { return m.gas }
+func (m callmsg) Value() *big.Int               { return m.value }
+func (m callmsg) Data() []byte                  { return m.data }
