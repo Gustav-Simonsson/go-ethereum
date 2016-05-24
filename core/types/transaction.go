@@ -307,6 +307,11 @@ func (tx *Transaction) String() string {
 	)
 }
 
+func (tx *Transaction) Bytes() []byte {
+	enc, _ := rlp.EncodeToBytes(&tx.data)
+	return enc
+}
+
 // Transaction slice type for basic sorting.
 type Transactions []*Transaction
 

@@ -871,6 +871,11 @@ type RPCTransaction struct {
 	Value            *rpc.HexNumber  `json:"value"`
 }
 
+// RPCRawTransaction represents a raw tx in binary form
+type RPCRawTransaction struct {
+	Tx string `json:"tx"`
+}
+
 // newRPCPendingTransaction returns a pending transaction that will serialize to the RPC representation
 func newRPCPendingTransaction(tx *types.Transaction) *RPCTransaction {
 	from, _ := tx.FromFrontier()
@@ -1084,6 +1089,42 @@ func (s *PublicTransactionPoolAPI) GetTransactionByHash(txHash common.Hash) (*RP
 		return newRPCTransaction(block, txHash)
 	}
 
+	return nil, nil
+}
+
+// GetRawTransactionByHash returns the raw transaction in binary form for the given hash
+func (s *PublicTransactionPoolAPI) GetRawTransactionByHash(txHash common.Hash) (*RPCRawTransaction, error) {
+	var tx *types.Transaction
+	var isPending bool
+	var err error
+
+	if tx, isPending, err = getTransaction(s.chainDb, s.txPool, txHash); err != nil {
+		glog.V(logger.Debug).Infof("%v\n", err)
+		return nil, nil
+	} else if tx == nil {
+		return nil, nil
+	}
+
+	if isPending {
+		return &RPCRawTransaction{common.ToHex(tx.Bytes())}, nil
+	}
+
+	blockHash, _, _, err := getTransactionBlockData(s.chainDb, txHash)
+	if err != nil {
+		glog.V(logger.Debug).Infof("%v\n", err)
+		return nil, nil
+	}
+
+	if b := s.bc.GetBlock(blockHash); b != nil {
+		for idx, tx := range b.Transactions() {
+			if tx.Hash() == txHash {
+				if idx >= 0 && idx < len(b.Transactions()) {
+					tx := b.Transactions()[idx]
+					return &RPCRawTransaction{common.ToHex(tx.Bytes())}, nil
+				}
+			}
+		}
+	}
 	return nil, nil
 }
 
