@@ -95,6 +95,7 @@ type Database interface {
 	SetNonce(common.Address, uint64)
 
 	GetCode(common.Address) []byte
+	GetCodeSize(common.Address) int
 	SetCode(common.Address, []byte)
 
 	AddRefund(*big.Int)

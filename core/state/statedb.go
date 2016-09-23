@@ -171,6 +171,14 @@ func (self *StateDB) GetCode(addr common.Address) []byte {
 	return nil
 }
 
+func (self *StateDB) GetCodeSize(addr common.Address) int {
+	stateObject := self.GetStateObject(addr)
+	if stateObject != nil {
+		return stateObject.CodeSize(self.db)
+	}
+	return 0
+}
+
 func (self *StateDB) GetState(a common.Address, b common.Hash) common.Hash {
 	stateObject := self.GetStateObject(a)
 	if stateObject != nil {
@@ -265,7 +273,9 @@ func (self *StateDB) GetStateObject(addr common.Address) (stateObject *StateObje
 
 	// Use cached account data from the canon state if possible.
 	if data, ok := self.all[addr]; ok {
-		return NewObject(addr, data)
+		obj := NewObject(addr, data)
+		self.SetStateObject(obj)
+		return obj
 	}
 
 	// Load the object from the database.
@@ -283,7 +293,7 @@ func (self *StateDB) GetStateObject(addr common.Address) (stateObject *StateObje
 	// The object we just loaded has no storage trie and code yet.
 	self.all[addr] = data
 	// Insert into the live set.
-	obj := NewObject(addr, data)
+	obj := NewObject(addr, CopyAccountData(data))
 	self.SetStateObject(obj)
 	return obj
 }
@@ -456,7 +466,7 @@ func (s *StateDB) commit(dbw trie.DatabaseWriter) (root common.Hash, err error) 
 			}
 			// Update the object in the main account trie.
 			s.UpdateStateObject(stateObject)
-			s.all[addr] = stateObject.data
+			s.all[addr] = CopyAccountData(stateObject.data)
 		}
 		stateObject.dirty = false
 	}

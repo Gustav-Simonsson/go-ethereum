@@ -363,7 +363,9 @@ func opCalldataCopy(instr instruction, pc *uint64, env Environment, contract *Co
 
 func opExtCodeSize(instr instruction, pc *uint64, env Environment, contract *Contract, memory *Memory, stack *Stack) {
 	addr := common.BigToAddress(stack.pop())
-	l := big.NewInt(int64(len(env.Db().GetCode(addr))))
+	//t0 := time.Now()
+	l := big.NewInt(int64(env.Db().GetCodeSize(addr)))
+	//fmt.Printf("EXTCODESIZE of %x len: %v took: %s\n", addr, l, time.Since(t0))
 	stack.push(l)
 }
 

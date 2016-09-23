@@ -94,9 +94,17 @@ type Account struct {
 	Balance  *big.Int
 	Root     common.Hash // merkle root of the storage trie
 	CodeHash []byte
+	codeSize *int
+}
 
-	// TODO(fjl): track code size here to get it into the cache
-	// codeSize int
+func CopyAccountData(acc Account) Account {
+	return Account{
+		Nonce:    acc.Nonce,
+		Balance:  new(big.Int).Set(acc.Balance),
+		Root:     acc.Root,
+		CodeHash: common.CopyBytes(acc.CodeHash),
+		codeSize: acc.codeSize,
+	}
 }
 
 // NewObject creates a state object.
@@ -228,7 +236,8 @@ func (c *StateObject) ReturnGas(gas, price *big.Int) {}
 
 func (self *StateObject) Copy(db trie.Database) *StateObject {
 	stateObject := NewObject(self.address, self.data)
-	stateObject.data.Balance.Set(self.data.Balance)
+	stateObject.data.Balance = new(big.Int).Set(self.data.Balance)
+	stateObject.data.CodeHash = common.CopyBytes(self.data.CodeHash)
 	stateObject.trie = self.trie
 	stateObject.code = self.code
 	stateObject.storage = self.storage.Copy()
@@ -260,11 +269,23 @@ func (self *StateObject) Code(db trie.Database) []byte {
 		self.setError(fmt.Errorf("can't load code hash %x: %v", self.CodeHash(), err))
 	}
 	self.code = code
+	self.data.codeSize = new(int)
+	*self.data.codeSize = len(code)
 	return code
+}
+
+func (self *StateObject) CodeSize(db trie.Database) int {
+	if self.data.codeSize == nil {
+		self.data.codeSize = new(int)
+		*self.data.codeSize = len(self.Code(db))
+	}
+	return *self.data.codeSize
 }
 
 func (self *StateObject) SetCode(code []byte) {
 	self.code = code
+	self.data.codeSize = new(int)
+	*self.data.codeSize = len(code)
 	self.data.CodeHash = crypto.Keccak256(code)
 	self.dirty = true
 }
