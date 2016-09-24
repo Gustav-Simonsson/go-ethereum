@@ -99,6 +99,33 @@ type Account struct {
 	codeSize *int
 }
 
+type JournalEntry struct {
+	Acc     Account
+	AccAddr common.Address
+	Root    common.Hash
+}
+
+func CopyAccount(acc Account) Account {
+	newAcc := Account{
+		Nonce:    acc.Nonce,
+		CodeHash: acc.CodeHash,
+		Root:     acc.Root,
+		codeSize: new(int),
+	}
+	if acc.Balance != nil {
+		newAcc.Balance = new(big.Int).Set(acc.Balance)
+	}
+
+	if acc.codeSize != nil {
+		*newAcc.codeSize = *acc.codeSize
+	}
+	return newAcc
+}
+
+func NewJournalEntry(acc Account, addr common.Address, root common.Hash) JournalEntry {
+	return JournalEntry{Acc: CopyAccount(acc), AccAddr: addr, Root: root}
+}
+
 // NewObject creates a state object.
 func NewObject(address common.Address, data Account) *StateObject {
 	if data.Balance == nil {

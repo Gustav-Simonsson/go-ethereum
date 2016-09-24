@@ -43,8 +43,10 @@ type StateDB struct {
 	db   ethdb.Database
 	trie *trie.SecureTrie
 
-	// This map caches canon state accounts.
-	all map[common.Address]Account
+	// This map caches canon state accounts. It's journal tracks changes
+	// that are rolled back on reorgs.
+	all     map[common.Address]Account
+	journal []JournalEntry
 
 	// This map holds 'live' objects, which will get modified
 	// while processing a state transition.
@@ -69,6 +71,7 @@ func New(root common.Hash, db ethdb.Database) (*StateDB, error) {
 		db:           db,
 		trie:         tr,
 		all:          make(map[common.Address]Account),
+		journal:      []JournalEntry{},
 		stateObjects: make(map[common.Address]*StateObject),
 		refund:       new(big.Int),
 		logs:         make(map[common.Hash]vm.Logs),
@@ -79,21 +82,45 @@ func New(root common.Hash, db ethdb.Database) (*StateDB, error) {
 // the underlying state trie to avoid reloading data for the next operations.
 func (self *StateDB) Reset(root common.Hash) error {
 	var (
-		err error
-		tr  = self.trie
-		all = self.all
+		err     error
+		tr      = self.trie
+		all     = self.all
+		journal = self.journal
 	)
 	if self.trie.Hash() != root {
 		// The root has changed, invalidate canon state.
 		if tr, err = trie.NewSecure(root, self.db); err != nil {
 			return err
 		}
-		all = make(map[common.Address]Account)
+		// iterate journaled entries and restore until same root is found
+		foundCommonRoot := false
+		rollbacks := 0
+		glog.V(logger.Info).Infof("journal size: %v.\n", len(journal))
+		for _, j := range journal {
+			if j.Root == root {
+				glog.V(logger.Info).Infof("journal root match: %x.\n", root)
+				foundCommonRoot = true
+				break
+			} else {
+				//glog.V(logger.Info).Infof("journal entry root: %x.\n", j.Root)
+				all[j.AccAddr] = CopyAccount(j.Acc)
+				rollbacks++
+			}
+		}
+		if !foundCommonRoot && rollbacks > 0 {
+			glog.V(logger.Info).Infof("'all' cache reset (no common root) after %v rollbacks.\n", rollbacks)
+			all = make(map[common.Address]Account)
+			journal = []JournalEntry{}
+		} else {
+			journal = journal[rollbacks:]
+			glog.V(logger.Info).Infof("'all' cache kept after %v rollbacks. new journal size: %v\n", rollbacks, len(journal))
+		}
 	}
 	*self = StateDB{
 		db:           self.db,
 		trie:         tr,
 		all:          all,
+		journal:      journal,
 		stateObjects: make(map[common.Address]*StateObject),
 		refund:       new(big.Int),
 		logs:         make(map[common.Hash]vm.Logs),
@@ -352,6 +379,7 @@ func (self *StateDB) Copy() *StateDB {
 	state, _ := New(common.Hash{}, self.db)
 	state.trie = self.trie
 	state.all = self.all
+	state.journal = self.journal
 	for addr, stateObject := range self.stateObjects {
 		if stateObject.dirty {
 			state.stateObjects[addr] = stateObject.Copy(self.db)
@@ -398,6 +426,10 @@ func (s *StateDB) IntermediateRoot() common.Hash {
 			}
 		}
 	}
+	return s.trie.Hash()
+}
+
+func (s *StateDB) Root() common.Hash {
 	return s.trie.Hash()
 }
 
@@ -448,6 +480,7 @@ func (s *StateDB) commit(dbw trie.DatabaseWriter) (root common.Hash, err error) 
 
 	// Commit objects to the trie.
 	for addr, stateObject := range s.stateObjects {
+		priorRoot := s.trie.Hash()
 		if stateObject.remove {
 			// If the object has been removed, don't bother syncing it
 			// and just mark it for deletion in the trie.
@@ -467,6 +500,8 @@ func (s *StateDB) commit(dbw trie.DatabaseWriter) (root common.Hash, err error) 
 			}
 			// Update the object in the main account trie.
 			s.UpdateStateObject(stateObject)
+			// journal state object data as it was BEFORE modification
+			s.journal = append([]JournalEntry{NewJournalEntry(s.all[addr], addr, priorRoot)}, s.journal...)
 			s.all[addr] = stateObject.data
 		}
 		stateObject.dirty = false

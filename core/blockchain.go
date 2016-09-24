@@ -895,10 +895,14 @@ func (self *BlockChain) InsertChain(chain types.Blocks) (int, error) {
 		// error if it fails.
 		switch {
 		case self.stateCache == nil:
+			glog.V(logger.Info).Infof("new stateCache.\n")
 			self.stateCache, err = state.New(self.GetBlock(block.ParentHash(), block.NumberU64()-1).Root(), self.chainDb)
 		case i == 0:
-			err = self.stateCache.Reset(self.GetBlock(block.ParentHash(), block.NumberU64()-1).Root())
+			b := self.GetBlock(block.ParentHash(), block.NumberU64()-1)
+			glog.V(logger.Info).Infof("stateCache.Reset: 0: bn: %v root: %x.\n", b.NumberU64(), b.Root())
+			err = self.stateCache.Reset(b.Root())
 		default:
+			glog.V(logger.Info).Infof("stateCache.Reset: %v: bn: %v root: %x.\n", i, chain[i-1].NumberU64(), chain[i-1].Root())
 			err = self.stateCache.Reset(chain[i-1].Root())
 		}
 		if err != nil {
@@ -971,7 +975,7 @@ func (self *BlockChain) InsertChain(chain types.Blocks) (int, error) {
 	if (stats.queued > 0 || stats.processed > 0 || stats.ignored > 0) && bool(glog.V(logger.Info)) {
 		tend := time.Since(tstart)
 		start, end := chain[0], chain[len(chain)-1]
-		glog.Infof("imported %d block(s) (%d queued %d ignored) including %d txs in %v. #%v [%x / %x]\n", stats.processed, stats.queued, stats.ignored, txcount, tend, end.Number(), start.Hash().Bytes()[:4], end.Hash().Bytes()[:4])
+		glog.Infof("%d w %d txs in %v. #%v [%x / %x] %x\n", stats.processed, txcount, tend, end.Number(), start.Hash().Bytes()[:4], end.Hash().Bytes()[:4], self.stateCache.Root().Bytes()[:4])
 	}
 	go self.postChainEvents(events, coalescedLogs)
 
